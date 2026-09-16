@@ -1,0 +1,37 @@
+# SIGIL — production compose.
+#
+# The container binds to 127.0.0.1 only: the host's nginx terminates TLS
+# and proxies to it, so the app is never directly reachable from the
+# internet on its own port.
+
+services:
+  sigil:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_GEMINI_TEXT_MODEL: ${NEXT_PUBLIC_GEMINI_TEXT_MODEL:-gemini-3.8-flash}
+        NEXT_PUBLIC_GEMINI_REASONING_MODEL: ${NEXT_PUBLIC_GEMINI_REASONING_MODEL:-gemini-3.8-flash}
+        NEXT_PUBLIC_GEMINI_IMAGE_MODEL: ${NEXT_PUBLIC_GEMINI_IMAGE_MODEL:-gemini-3.1-flash-image}
+        NEXT_PUBLIC_GEMINI_FINALIST_IMAGE_MODEL: ${NEXT_PUBLIC_GEMINI_FINALIST_IMAGE_MODEL:-gemini-3-pro-image}
+        NEXT_PUBLIC_BATCH_CONCURRENCY: ${NEXT_PUBLIC_BATCH_CONCURRENCY:-3}
+        NEXT_PUBLIC_MAX_RETRIES: ${NEXT_PUBLIC_MAX_RETRIES:-2}
+        NEXT_PUBLIC_DEFAULT_DIRECTIONS: ${NEXT_PUBLIC_DEFAULT_DIRECTIONS:-8}
+        NEXT_PUBLIC_DEFAULT_CONCEPTS_PER_DIRECTION: ${NEXT_PUBLIC_DEFAULT_CONCEPTS_PER_DIRECTION:-6}
+        NEXT_PUBLIC_DEFAULT_ITERATIONS: ${NEXT_PUBLIC_DEFAULT_ITERATIONS:-4}
+        NEXT_PUBLIC_IMAGE_ASPECT_RATIO: ${NEXT_PUBLIC_IMAGE_ASPECT_RATIO:-1:1}
+    image: sigil:latest
+    container_name: sigil
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3210:3210"
+    environment:
+      # Server-only. Never reaches the browser bundle.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY must be set in .env}
+      GEMINI_TIMEOUT_MS: ${GEMINI_TIMEOUT_MS:-180000}
+      NODE_ENV: production
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

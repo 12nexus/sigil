@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="SIGIL">
+  <defs>
+    <linearGradient id="sigilSeal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1E1E27"/>
+      <stop offset="1" stop-color="#08080B"/>
+    </linearGradient>
+    <linearGradient id="sigilGlyph" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#F6E3BA"/>
+      <stop offset="0.5" stop-color="#DDB876"/>
+      <stop offset="1" stop-color="#B2803C"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="62" height="62" rx="18" fill="url(#sigilSeal)"/>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="none" stroke="#DDB876" stroke-opacity="0.22" stroke-width="1"/>
+  <path fill="url(#sigilGlyph)" d="M18 22 L24 16 L46 16 L46 23 L25 23 L25 28.5 L46 28.5 L46 42 L40 48 L18 48 L18 41 L39 41 L39 35.5 L18 35.5 Z"/>
+</svg>

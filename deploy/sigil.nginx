@@ -1,0 +1,91 @@
+# SIGIL — nginx site for sigil.12nexusbpo.com
+#
+# Terminates TLS on the host and proxies to the container on 127.0.0.1:3210.
+# Certbot rewrites the listen/ssl directives when the certificate is issued.
+
+# Generation endpoints are expensive: cap how fast a single IP can call them.
+limit_req_zone $binary_remote_addr zone=sigil_api:10m rate=30r/m;
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name sigil.12nexusbpo.com;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name sigil.12nexusbpo.com;
+
+    # Generated artwork travels as base64 JSON; a batch response is large.
+    client_max_body_size 32m;
+
+    access_log /var/log/nginx/sigil.access.log;
+    error_log  /var/log/nginx/sigil.error.log;
+
+    # Never allow the app to be framed by another origin.
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript
+               text/xml application/xml image/svg+xml;
+    gzip_min_length 1024;
+
+    # Image generation can legitimately take minutes for a large batch.
+    location /api/gemini/ {
+        limit_req zone=sigil_api burst=20 nodelay;
+        limit_req_status 429;
+
+        proxy_pass http://127.0.0.1:3210;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout    600s;
+        proxy_read_timeout    600s;
+        proxy_buffering       off;
+    }
+
+    location /_next/static/ {
+        proxy_pass http://127.0.0.1:3210;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_cache_valid 200 30d;
+        expires 30d;
+        access_log off;
+    }
+
+    location / {
+        # To require a login, create the password file and uncomment:
+        #   sudo apt-get install -y apache2-utils
+        #   sudo htpasswd -c /etc/nginx/.sigil-htpasswd <username>
+        # auth_basic           "SIGIL";
+        # auth_basic_user_file /etc/nginx/.sigil-htpasswd;
+
+        proxy_pass http://127.0.0.1:3210;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        "upgrade";
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout    300s;
+        proxy_read_timeout    300s;
+    }
+}

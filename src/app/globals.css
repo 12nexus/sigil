@@ -1,0 +1,212 @@
+@import "tailwindcss";
+
+/* ==================================================================
+   SIGIL design language
+   Editorial studio, not admin dashboard: deep ink ground, bone text,
+   a single champagne accent, and generous space around the artwork.
+   ================================================================== */
+
+@theme {
+  --color-void: #08080b;
+  --color-surface: #0e0e13;
+  --color-surface-2: #14141b;
+  --color-surface-3: #1c1c25;
+  --color-surface-4: #262630;
+
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-line-strong: rgba(255, 255, 255, 0.14);
+
+  --color-ink: #f2efe9;
+  --color-muted: #94918a;
+  --color-faint: #64615c;
+
+  --color-accent: #ddb876;
+  --color-accent-bright: #f3dcac;
+  --color-accent-deep: #b2803c;
+
+  --color-violet: #8b7bf7;
+  --color-danger: #e5675c;
+  --color-success: #6fbf8b;
+  --color-caution: #e0a95c;
+
+  /* The gallery ground used for client presentation and logo previews. */
+  --color-bone: #f7f5f0;
+  --color-bone-2: #ebe7de;
+
+  --font-display: var(--font-serif-display), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-sans-ui), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+  --shadow-panel: 0 24px 64px -16px rgba(0, 0, 0, 0.7);
+
+  --animate-rise: rise 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+  --animate-fade: fade 0.4s ease-out;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes shimmer {
+  0% { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-void);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* A faint vertical gradient keeps the ground from reading as flat black. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(221, 184, 118, 0.05), transparent 70%),
+      radial-gradient(900px 500px at 90% 0%, rgba(139, 123, 247, 0.04), transparent 70%);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+  }
+
+  ::selection {
+    background: rgba(221, 184, 118, 0.28);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  input, textarea, select, button {
+    font: inherit;
+    color: inherit;
+  }
+
+  textarea { resize: vertical; }
+
+  /* Scrollbars that belong to the interface rather than the OS. */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-surface-4);
+    border-radius: 6px;
+    border: 2px solid var(--color-void);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #33333f; }
+}
+
+@layer components {
+  /* Small caps label used throughout the studio chrome. */
+  .label-xs {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+  }
+
+  .hairline {
+    border-top: 1px solid var(--color-line);
+  }
+
+  /* The neutral ground every logo is evaluated against. */
+  .logo-stage {
+    background:
+      linear-gradient(0deg, var(--color-bone-2), var(--color-bone));
+    border-radius: 10px;
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-2) 0%,
+      var(--color-surface-3) 40%,
+      var(--color-surface-2) 80%
+    );
+    background-size: 600px 100%;
+    animation: var(--animate-shimmer);
+  }
+
+  .prose-brief p { margin-bottom: 0.75rem; }
+  .prose-brief p:last-child { margin-bottom: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Print — used by the presentation and brand-kit PDF exports.         */
+/* ------------------------------------------------------------------ */
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #16161c !important;
+  }
+  body::before { display: none !important; }
+
+  .no-print { display: none !important; }
+
+  .print-page {
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .print-surface {
+    background: #fff !important;
+    border-color: #d8d4cc !important;
+    color: #16161c !important;
+    box-shadow: none !important;
+  }
+}

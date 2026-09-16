@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+build
+.git
+.github
+.env
+.env.local
+.env*.local
+e2e/shots
+e2e/.profile
+*.log
+.DS_Store
+tsconfig.tsbuildinfo
+README.md
+deploy
