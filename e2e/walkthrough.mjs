@@ -46,7 +46,18 @@ const run = async () => {
 
   /* ---------------------------------------------------------------- */
   log("1. Dashboard loads and offers the sample project");
+  // Sign in (the persistent profile keeps the session between runs).
   await page.goto(BASE, { waitUntil: "networkidle" });
+  if (new URL(page.url()).pathname === "/login") {
+    const user = process.env.SIGIL_AUTH_USERNAME;
+    const pass = process.env.SIGIL_AUTH_PASSWORD;
+    if (!user || !pass) throw new Error("Set SIGIL_AUTH_USERNAME and SIGIL_AUTH_PASSWORD to run the walkthrough");
+    await page.getByLabel("Username").fill(user);
+    await page.getByLabel("Password").fill(pass);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.waitForURL((url) => url.pathname !== "/login");
+    await page.goto(BASE, { waitUntil: "networkidle" });
+  }
   await page.getByRole("heading", { name: "Projects" }).waitFor();
   ok("dashboard rendered");
   await shot(page, "dashboard-empty");

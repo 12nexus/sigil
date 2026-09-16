@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FolderOpen, KeyRound, Plus, Settings, Sparkles } from "lucide-react";
+import { FolderOpen, KeyRound, LogOut, Plus, Settings, Sparkles } from "lucide-react";
 import { SigilLockup } from "@/components/brand/SigilLogo";
 import { Button } from "@/components/ui/Button";
 import {
@@ -121,6 +121,11 @@ export default function DashboardPage() {
     }
   };
 
+  const signOut = async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    router.replace("/login");
+  };
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-line bg-void/85 backdrop-blur-xl">
@@ -134,6 +139,9 @@ export default function DashboardPage() {
                 Settings
               </Button>
             </Link>
+            <Button variant="ghost" size="sm" icon={<LogOut size={14} />} onClick={signOut}>
+              Sign out
+            </Button>
             <Button
               variant="accent"
               size="sm"

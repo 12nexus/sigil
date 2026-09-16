@@ -26,7 +26,13 @@ if ! grep -qE '^GEMINI_API_KEY=.+' .env; then
   echo "✗ GEMINI_API_KEY is empty in .env"
   exit 1
 fi
-echo "  ✓ .env present with a key"
+for var in SIGIL_AUTH_USERNAME SIGIL_AUTH_PASSWORD; do
+  if ! grep -qE "^${var}=.+" .env; then
+    echo "✗ $var is empty in .env — SIGIL will not start without sign-in credentials"
+    exit 1
+  fi
+done
+echo "  ✓ .env present with a key and sign-in credentials"
 
 # ── 2. Build and start the container ─────────────────────────────────
 echo "▸ Building image"

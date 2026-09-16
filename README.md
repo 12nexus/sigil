@@ -43,7 +43,7 @@ Identity: ink `#08080B`, bone `#F2EFE9`, champagne `#DDB876`, with violet
 ```bash
 cd sigil
 npm install
-cp .env.example .env.local     # then paste your key into GEMINI_API_KEY
+cp .env.example .env.local     # set GEMINI_API_KEY, SIGIL_AUTH_USERNAME, SIGIL_AUTH_PASSWORD
 npm run dev                    # http://localhost:3210
 ```
 
@@ -72,6 +72,9 @@ Everything is set by environment variable and overridable at runtime from
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | *(required)* | **Server-only.** Never reaches the browser. |
+| `SIGIL_AUTH_USERNAME` | *(required)* | **Server-only.** Sign-in username. |
+| `SIGIL_AUTH_PASSWORD` | *(required)* | **Server-only.** Sign-in password. |
+| `SIGIL_AUTH_SECRET` | *(empty)* | Optional extra session-signing secret. |
 | `NEXT_PUBLIC_GEMINI_TEXT_MODEL` | `gemini-3.8-flash` | Discovery interview |
 | `NEXT_PUBLIC_GEMINI_REASONING_MODEL` | `gemini-3.8-flash` | Brief, directions, critique, iteration |
 | `NEXT_PUBLIC_GEMINI_IMAGE_MODEL` | `gemini-3.1-flash-image` | Exploration batches (Nano Banana 2) |
@@ -215,9 +218,18 @@ means satisfying that interface — no component changes.
   correct production setup.
 - `.env.local` is gitignored. `.env.example` contains no secrets.
 
-**Before deploying publicly**, add authentication. SIGIL currently assumes a
-single trusted operator on their own machine, and the API routes are unauthenticated —
-anyone who can reach them can spend your quota.
+- **Every page and API route requires sign-in.** [`src/proxy.ts`](src/proxy.ts)
+  checks a session cookie on each request and redirects to `/login` (or returns
+  `401` for `/api/*`). The only open routes are `/login`, `/api/auth/*`, and
+  `GET /api/gemini/status`, which the container healthcheck uses and which
+  reports only whether a server key exists.
+- Credentials come from `SIGIL_AUTH_USERNAME` / `SIGIL_AUTH_PASSWORD`. If either
+  is unset, sign-in is refused and the app stays locked (fails closed).
+- The session is a 12-hour `HttpOnly`, `SameSite=Lax` cookie (`Secure` over
+  HTTPS), HMAC-signed with a key derived from the credentials and
+  `SIGIL_AUTH_SECRET`. Changing the password or the secret signs everyone out.
+- Failed sign-ins are delayed in the app and rate-limited to 5/min per IP in nginx.
+- This is a single shared operator login, not per-user accounts or quotas.
 
 ---
 
@@ -298,7 +310,7 @@ for exploration, and `gemini-3-pro-image` for lockups and delivery assets.
 
 - A backend (Supabase/Postgres + object storage) to make client links shareable
   and enable real multi-user review.
-- Authentication and per-user quota before any public deployment.
+- Per-user accounts and quotas in place of the single operator login.
 - Vector handoff: export the approved mark into an SVG scaffold with correct
   clear-space and a properly set wordmark for a designer to finish.
 - Wordmark reconstruction in-app, compositing the verified symbol with live

@@ -28,6 +28,10 @@ services:
     environment:
       # Server-only. Never reaches the browser bundle.
       GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY must be set in .env}
+      # Operator sign-in. The app refuses every request without these.
+      SIGIL_AUTH_USERNAME: ${SIGIL_AUTH_USERNAME:?SIGIL_AUTH_USERNAME must be set in .env}
+      SIGIL_AUTH_PASSWORD: ${SIGIL_AUTH_PASSWORD:?SIGIL_AUTH_PASSWORD must be set in .env}
+      SIGIL_AUTH_SECRET: ${SIGIL_AUTH_SECRET:-}
       GEMINI_TIMEOUT_MS: ${GEMINI_TIMEOUT_MS:-180000}
       NODE_ENV: production
     logging:

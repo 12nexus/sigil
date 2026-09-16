@@ -5,6 +5,8 @@
 
 # Generation endpoints are expensive: cap how fast a single IP can call them.
 limit_req_zone $binary_remote_addr zone=sigil_api:10m rate=30r/m;
+# Sign-in attempts: slow enough to make password guessing impractical.
+limit_req_zone $binary_remote_addr zone=sigil_login:10m rate=5r/m;
 
 server {
     listen 80;
@@ -65,6 +67,18 @@ server {
         proxy_buffering       off;
     }
 
+    location = /api/auth/login {
+        limit_req zone=sigil_login burst=5 nodelay;
+        limit_req_status 429;
+
+        proxy_pass http://127.0.0.1:3210;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # The product walkthrough video, served straight off disk rather than
     # through the app container. Place the file at
     # /var/www/sigil-static/walkthrough.mp4 — deploy.sh does not manage it.
@@ -87,12 +101,7 @@ server {
     }
 
     location / {
-        # To require a login, create the password file and uncomment:
-        #   sudo apt-get install -y apache2-utils
-        #   sudo htpasswd -c /etc/nginx/.sigil-htpasswd <username>
-        # auth_basic           "SIGIL";
-        # auth_basic_user_file /etc/nginx/.sigil-htpasswd;
-
+        # Sign-in is enforced by the app itself (src/proxy.ts).
         proxy_pass http://127.0.0.1:3210;
         proxy_http_version 1.1;
         proxy_set_header Upgrade           $http_upgrade;
