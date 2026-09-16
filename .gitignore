@@ -13,3 +13,9 @@ tsconfig.tsbuildinfo
 /coverage
 e2e/.profile
 e2e/shots
+demo/node_modules
+demo/audio
+demo/audio-test
+demo/testreel-output
+demo/probe*.mjs
+demo/package*.json

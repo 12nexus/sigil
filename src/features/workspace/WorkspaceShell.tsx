@@ -108,7 +108,9 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
               <History size={15} />
             </IconButton>
           </Link>
-          <Link href={`/present/${project.id}`} target="_blank">
+          {/* Same tab, like History and Settings — the explicit "Preview"
+              button inside Client Review is the open-in-new-tab affordance. */}
+          <Link href={`/present/${project.id}`}>
             <IconButton label="Open client presentation">
               <Presentation size={15} />
             </IconButton>
