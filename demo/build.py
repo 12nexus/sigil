@@ -277,6 +277,7 @@ definition = {
 json.dump(definition, open("recording.json", "w"), indent=2, ensure_ascii=False)
 
 manifest = [{"out": f"line{i:02d}.wav", "voice": "Charon", "text": n["text"],
+             "at": n["at"],                       # step index the line starts on
              "offset": round(offsets[n["at"]], 2)}
             for i, n in enumerate(NARR)]
 json.dump(manifest, open("narration.json", "w"), indent=2, ensure_ascii=False)

@@ -14,6 +14,9 @@ the recording, against a fictional client invented for the demo.
 | `recording.json` | testreel definition (generated — edit `build.py`, not this) |
 | `narration.json` | Narration lines with computed audio offsets (generated) |
 | `tts.mjs` | Resilient Gemini TTS batch runner |
+| `patch-testreel.mjs` | Makes testreel scroll targets into view before clicking (see below) |
+| `chrome.mjs` | Renders the window shell + background as one 1920x1080 PNG |
+| `render.py` | Composites the capture: speed ramps, chrome, 1920x1080 |
 | `mux.py` | Lays the narration onto the video at per-scene offsets |
 | `audio/` | Generated narration clips (gitignored) |
 | `testreel-output/` | Rendered video (gitignored) |
@@ -23,9 +26,12 @@ the recording, against a fictional client invented for the demo.
 ```bash
 export GEMINI_API_KEY=...
 npm install
+node patch-testreel.mjs                             # required — see below
 python3 build.py                                   # definition + narration manifest
 node tts.mjs --manifest narration.json --dir audio # narration clips (cached)
 npx testreel recording.json -o testreel-output --clean
+node chrome.mjs                                    # window shell + background
+python3 render.py                                  # speed ramps + compositing
 python3 mux.py                                     # → testreel-output/sigil-walkthrough.mp4
 ```
 
@@ -36,18 +42,28 @@ and the pacing, and it re-derives everything else.
 
 Both cost a full re-record to discover, so they are written down here.
 
-**1. It clicks raw viewport coordinates.** `page.locator(sel)` is resolved, its
-bounding box measured, and `mouse.click(x, y)` fired — with no
-`scrollIntoView`. An element below the fold has `y > viewportHeight` and the
-click lands on nothing; an element scrolled above has a negative `y` and does
-the same. Playwright reports it as "visible" either way, so the step is logged
-as succeeding and the failure only surfaces several steps later.
+**1. It clicks raw viewport coordinates — run `patch-testreel.mjs`.**
+`page.locator(sel)` is resolved, its bounding box measured, and
+`mouse.click(x, y)` fired, with no `scrollIntoView`. An element below the fold
+has `y > viewportHeight` and the click lands on nothing; one scrolled above has
+a negative `y` and does the same. Playwright reports it as "visible" either
+way, so testreel logs the step as succeeding and the real failure surfaces
+several steps later as a missing element.
 
-Consequence: **every click target must already be on screen.** The workspace
-header is `sticky`, so its icons are always safe; `StageHeader`'s action button
-is not, so the definition scrolls back to the top before using it. For targets
-at the foot of a long page, scrolling by a large delta is a reliable anchor
-because the browser clamps at the document end.
+Measured on the discovery page: a button at `y = 1762` in a 900px viewport.
+A raw coordinate click changed nothing; after `scrollIntoViewIfNeeded()` it
+moved to `y = 795` and the click worked.
+
+```bash
+node patch-testreel.mjs   # re-run after every npm install
+```
+
+The patch inserts `scrollIntoViewIfNeeded()` into the single helper every
+click, type, fill and hover passes through. It must be applied to **all five**
+bundles — `index.js`, `fixture.js`, `index.cjs`, `fixture.cjs`, `cli.cjs` —
+because the CLI loads the CommonJS ones; patching only the ESM builds silently
+changes nothing. The patcher matches the helper structurally, so minified
+identifiers do not matter, and it is idempotent.
 
 **2. Selectors are strict.** No `.first()` is applied, so a selector matching
 two elements throws. Every stage page has two `<h1>` — the project name in the
@@ -60,3 +76,30 @@ workspace header and the stage name in `StageHeader` — hence `main h1`.
 belongs to until the line fits with headroom, iterating until nothing overruns.
 Generation waits carry a per-step `speed` (6–10×) so a real 60-second batch
 reads as a few seconds on screen without the narration racing.
+
+
+## Why the rendering is done here rather than by testreel
+
+testreel builds its cursor-visibility filter as a single nested `if()` chain,
+one branch per cursor event. Across a 19-minute recording that came to 108
+events, and ffmpeg's expression parser gives up:
+
+```
+[Parsed_geq_4] [Eval] Missing ')' or too many args in 'if(lt(T,546.3500),1,if(...
+warning: post-processing failed
+```
+
+The capture itself is unaffected — testreel still writes the raw video — so
+`render.py` does the compositing instead. It hits the same wall if you build
+the speed ramp as one nested expression (138 segments), so it merges
+neighbouring steps that share a speed (138 → 23 runs) and emits a **flat**
+`trim`/`setpts`/`concat` graph: 1.8 KB, no nesting, no limit.
+
+The trade-off is that the animated cursor is not composited. Everything else —
+the speed ramps, window chrome, gradient background and 1920x1080 framing —
+is reproduced.
+
+Step timings come from testreel's own verbose log rather than from the planned
+values in `build.py`, because model latency makes every run different. The
+narration offsets are recomputed the same way at mux time, so audio stays with
+the picture.

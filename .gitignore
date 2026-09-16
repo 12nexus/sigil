@@ -19,3 +19,5 @@ demo/audio-test
 demo/testreel-output
 demo/probe*.mjs
 demo/package*.json
+demo/render-filter.txt
+demo/verify.mjs
