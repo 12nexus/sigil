@@ -1,0 +1,708 @@
+{
+  "url": "https://sigil.12nexusbpo.com",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "outputSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "outputFormat": "mp4",
+  "colorScheme": "dark",
+  "waitForSelector": "text=Projects",
+  "cursor": {
+    "style": "pointer",
+    "size": 44,
+    "rippleSize": 110
+  },
+  "chrome": {
+    "enabled": true,
+    "url": "sigil.12nexusbpo.com",
+    "titleBarColor": "#1b1b22"
+  },
+  "background": {
+    "enabled": true,
+    "gradient": {
+      "from": "#2b2119",
+      "to": "#0a0a0e"
+    },
+    "padding": 56,
+    "borderRadius": 14
+  },
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2800
+    },
+    {
+      "action": "zoom",
+      "scale": 1.3,
+      "duration": 800,
+      "selector": "main h1"
+    },
+    {
+      "action": "wait",
+      "ms": 7770
+    },
+    {
+      "action": "wait",
+      "ms": 4200
+    },
+    {
+      "action": "zoom",
+      "scale": 1,
+      "duration": 800
+    },
+    {
+      "action": "wait",
+      "ms": 2970
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"New project\") >> nth=0",
+      "pauseAfter": 1500
+    },
+    {
+      "action": "wait",
+      "ms": 5090
+    },
+    {
+      "action": "type",
+      "selector": "input[placeholder=\"Nexora\"]",
+      "text": "Meeras Estates",
+      "delay": 95,
+      "pauseAfter": 4370
+    },
+    {
+      "action": "type",
+      "selector": "input[placeholder=\"AI consulting for industrial operations\"]",
+      "text": "Real estate — verified-title residential plots",
+      "delay": 40,
+      "pauseAfter": 5220
+    },
+    {
+      "action": "type",
+      "selector": "textarea",
+      "text": "Lahore-based property brokerage founded in 2011 by two brothers, after their family's ancestral farmland was lost to a forged transfer deed. Every plot is forensically title-verified before it is listed.",
+      "delay": 14,
+      "pauseAfter": 4200
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Create and start discovery\")",
+      "pauseAfter": 1200
+    },
+    {
+      "action": "wait",
+      "ms": 4200
+    },
+    {
+      "action": "zoom",
+      "scale": 1.22,
+      "duration": 800,
+      "selector": "main h1"
+    },
+    {
+      "action": "wait",
+      "ms": 5200
+    },
+    {
+      "action": "zoom",
+      "scale": 1,
+      "duration": 800
+    },
+    {
+      "action": "wait",
+      "ms": 1400
+    },
+    {
+      "action": "type",
+      "selector": "textarea[placeholder=\"COOs and plant directors at $50M–$500M manufacturers\"]",
+      "text": "First-time plot buyers, and overseas Pakistanis purchasing remotely who cannot inspect the documents themselves.",
+      "delay": 15,
+      "pauseAfter": 900
+    },
+    {
+      "action": "click",
+      "selector": "section:has(textarea[placeholder=\"COOs and plant directors at $50M–$500M manufacturers\"]) button:has-text(\"Answer\")",
+      "pauseAfter": 3680
+    },
+    {
+      "action": "type",
+      "selector": "textarea[placeholder=\"That these people are serious, precise, and already ahead\"]",
+      "text": "Relief. That someone has finally checked the papers properly, and nobody can take this land away from them.",
+      "delay": 15,
+      "pauseAfter": 900
+    },
+    {
+      "action": "click",
+      "selector": "section:has(textarea[placeholder=\"That these people are serious, precise, and already ahead\"]) button:has-text(\"Answer\")",
+      "pauseAfter": 3875
+    },
+    {
+      "action": "type",
+      "selector": "input[placeholder=\"precise, confident, human, unflashy\"]",
+      "text": "trustworthy, meticulous, rooted, protective, unflashy",
+      "delay": 26,
+      "pauseAfter": 900
+    },
+    {
+      "action": "click",
+      "selector": "section:has(input[placeholder=\"precise, confident, human, unflashy\"]) button:has-text(\"Answer\")",
+      "pauseAfter": 3222
+    },
+    {
+      "action": "type",
+      "selector": "input[placeholder=\"Palantir, Scale AI, local consultancies\"]",
+      "text": "Large property portals and local commission dealers",
+      "delay": 26,
+      "pauseAfter": 900
+    },
+    {
+      "action": "click",
+      "selector": "section:has(input[placeholder=\"Palantir, Scale AI, local consultancies\"]) button:has-text(\"Answer\")",
+      "pauseAfter": 2600
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Continue the interview\")",
+      "pauseAfter": 600
+    },
+    {
+      "action": "wait",
+      "ms": 34000,
+      "speed": 7
+    },
+    {
+      "action": "wait",
+      "ms": 8000
+    },
+    {
+      "action": "scroll",
+      "y": -3000,
+      "pauseAfter": 1600
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Write the brief\") >> nth=0",
+      "pauseAfter": 1400
+    },
+    {
+      "action": "wait",
+      "ms": 3000
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Write the brand brief\")",
+      "pauseAfter": 700
+    },
+    {
+      "action": "wait",
+      "ms": 45000,
+      "speed": 7
+    },
+    {
+      "action": "wait",
+      "ms": 5600
+    },
+    {
+      "action": "scroll",
+      "y": 680,
+      "pauseAfter": 3800
+    },
+    {
+      "action": "scroll",
+      "y": 820,
+      "pauseAfter": 4000
+    },
+    {
+      "action": "scroll",
+      "y": 1200,
+      "pauseAfter": 3000
+    },
+    {
+      "action": "zoom",
+      "scale": 1.25,
+      "duration": 800,
+      "selector": "h2:has-text('Avoid')"
+    },
+    {
+      "action": "wait",
+      "ms": 6400
+    },
+    {
+      "action": "zoom",
+      "scale": 1,
+      "duration": 800
+    },
+    {
+      "action": "wait",
+      "ms": 1710
+    },
+    {
+      "action": "scroll",
+      "y": -3200,
+      "pauseAfter": 4940
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Approve brief\") >> nth=0",
+      "pauseAfter": 1400
+    },
+    {
+      "action": "wait",
+      "ms": 4390
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Develop\")",
+      "pauseAfter": 700
+    },
+    {
+      "action": "wait",
+      "ms": 58000,
+      "speed": 8
+    },
+    {
+      "action": "wait",
+      "ms": 6400
+    },
+    {
+      "action": "scroll",
+      "y": 460,
+      "pauseAfter": 4600
+    },
+    {
+      "action": "scroll",
+      "y": 440,
+      "pauseAfter": 4600
+    },
+    {
+      "action": "click",
+      "selector": "xpath=(//article)[1]//button[normalize-space()='Approve']",
+      "pauseAfter": 2400
+    },
+    {
+      "action": "click",
+      "selector": "xpath=(//article)[2]//button[normalize-space()='Approve']",
+      "pauseAfter": 2600
+    },
+    {
+      "action": "scroll",
+      "y": 620,
+      "pauseAfter": 2200
+    },
+    {
+      "action": "click",
+      "selector": "xpath=(//article)[3]//button[normalize-space()='Reject']",
+      "pauseAfter": 4600
+    },
+    {
+      "action": "scroll",
+      "y": -3000,
+      "pauseAfter": 1800
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Generate logos from\")",
+      "pauseAfter": 1600
+    },
+    {
+      "action": "wait",
+      "ms": 3400
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Generate concepts\")",
+      "pauseAfter": 1700
+    },
+    {
+      "action": "fill",
+      "selector": "[role=dialog] input[type=number] >> nth=0",
+      "text": "3",
+      "pauseAfter": 3000
+    },
+    {
+      "action": "click",
+      "selector": "[role=dialog] button:has-text(\"Generate\")",
+      "pauseAfter": 900
+    },
+    {
+      "action": "wait",
+      "ms": 32000,
+      "speed": 6
+    },
+    {
+      "action": "wait",
+      "ms": 5600
+    },
+    {
+      "action": "wait",
+      "ms": 55000,
+      "speed": 6
+    },
+    {
+      "action": "wait",
+      "ms": 6800
+    },
+    {
+      "action": "scroll",
+      "y": 540,
+      "pauseAfter": 5200
+    },
+    {
+      "action": "click",
+      "selector": "xpath=(//article)[1]//button[@aria-label='Favourite']",
+      "pauseAfter": 1800
+    },
+    {
+      "action": "click",
+      "selector": "xpath=(//article)[2]//button[@aria-label='Shortlist']",
+      "pauseAfter": 1800
+    },
+    {
+      "action": "click",
+      "selector": "xpath=(//article)[3]//button[@aria-label='Shortlist']",
+      "pauseAfter": 4200
+    },
+    {
+      "action": "click",
+      "selector": "xpath=(//article)[2]//img",
+      "pauseAfter": 2200
+    },
+    {
+      "action": "wait",
+      "ms": 3400
+    },
+    {
+      "action": "click",
+      "selector": "[role=tab]:has-text(\"AI critique\")",
+      "pauseAfter": 1700
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Run design critique\")",
+      "pauseAfter": 900
+    },
+    {
+      "action": "wait",
+      "ms": 42000,
+      "speed": 7
+    },
+    {
+      "action": "wait",
+      "ms": 6400
+    },
+    {
+      "action": "scroll",
+      "y": 480,
+      "pauseAfter": 5600
+    },
+    {
+      "action": "scroll",
+      "y": -480,
+      "pauseAfter": 1600
+    },
+    {
+      "action": "click",
+      "selector": "button:text-is(\"Pure B/W\")",
+      "pauseAfter": 6000
+    },
+    {
+      "action": "click",
+      "selector": "[role=dialog] button[aria-label=\"Close\"]",
+      "pauseAfter": 2600
+    },
+    {
+      "action": "click",
+      "selector": "nav[aria-label=\"Workflow stages\"] a:has-text(\"Refinement\")",
+      "pauseAfter": 3400
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Refine with feedback\") >> nth=0",
+      "pauseAfter": 1600
+    },
+    {
+      "action": "wait",
+      "ms": 2600
+    },
+    {
+      "action": "type",
+      "selector": "[role=dialog] textarea >> nth=0",
+      "text": "Symbol is right — keep the seal exactly as it is. The wordmark is too light; try a heavier, more official typeface.",
+      "delay": 15,
+      "pauseAfter": 2200
+    },
+    {
+      "action": "fill",
+      "selector": "[role=dialog] input[type=number] >> nth=0",
+      "text": "2",
+      "pauseAfter": 2000
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Interpret feedback\")",
+      "pauseAfter": 900
+    },
+    {
+      "action": "wait",
+      "ms": 34000,
+      "speed": 7
+    },
+    {
+      "action": "wait",
+      "ms": 6400
+    },
+    {
+      "action": "scroll",
+      "y": 420,
+      "pauseAfter": 5600
+    },
+    {
+      "action": "scroll",
+      "y": -420,
+      "pauseAfter": 1600
+    },
+    {
+      "action": "click",
+      "selector": "[role=dialog] button:has-text(\"Generate\")",
+      "pauseAfter": 1200
+    },
+    {
+      "action": "wait",
+      "ms": 45000,
+      "speed": 6
+    },
+    {
+      "action": "wait",
+      "ms": 6400
+    },
+    {
+      "action": "scroll",
+      "y": 520,
+      "pauseAfter": 5740
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Promote to finalist\") >> nth=0",
+      "pauseAfter": 2800
+    },
+    {
+      "action": "click",
+      "selector": "nav[aria-label=\"Workflow stages\"] a:has-text(\"Finalists\")",
+      "pauseAfter": 3600
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Build lockup family\") >> nth=0",
+      "pauseAfter": 900
+    },
+    {
+      "action": "wait",
+      "ms": 125000,
+      "speed": 9
+    },
+    {
+      "action": "wait",
+      "ms": 6800
+    },
+    {
+      "action": "scroll",
+      "y": 560,
+      "pauseAfter": 5800
+    },
+    {
+      "action": "scroll",
+      "y": -3000,
+      "pauseAfter": 1800
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Approve for client\") >> nth=0",
+      "pauseAfter": 1600
+    },
+    {
+      "action": "wait",
+      "ms": 4000
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Publish presentation\") >> nth=0",
+      "pauseAfter": 1600
+    },
+    {
+      "action": "wait",
+      "ms": 3600
+    },
+    {
+      "action": "zoom",
+      "scale": 1.2,
+      "duration": 800,
+      "selector": "code"
+    },
+    {
+      "action": "wait",
+      "ms": 5000
+    },
+    {
+      "action": "zoom",
+      "scale": 1,
+      "duration": 800
+    },
+    {
+      "action": "wait",
+      "ms": 1400
+    },
+    {
+      "action": "scroll",
+      "y": 3000,
+      "pauseAfter": 4000
+    },
+    {
+      "action": "click",
+      "selector": "button[aria-label^=\"Record client approval of\"] >> nth=0",
+      "pauseAfter": 2400
+    },
+    {
+      "action": "wait",
+      "ms": 4000
+    },
+    {
+      "action": "zoom",
+      "scale": 1.18,
+      "duration": 800,
+      "selector": "h2:has-text(\"Approval chain\")"
+    },
+    {
+      "action": "wait",
+      "ms": 5600
+    },
+    {
+      "action": "zoom",
+      "scale": 1,
+      "duration": 800
+    },
+    {
+      "action": "wait",
+      "ms": 1400
+    },
+    {
+      "action": "scroll",
+      "y": 3000,
+      "pauseAfter": 2000
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Approve as final\")",
+      "pauseAfter": 2800
+    },
+    {
+      "action": "scroll",
+      "y": 3000,
+      "pauseAfter": 1600
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"logo system\")",
+      "pauseAfter": 900
+    },
+    {
+      "action": "wait",
+      "ms": 150000,
+      "speed": 10
+    },
+    {
+      "action": "wait",
+      "ms": 6800
+    },
+    {
+      "action": "click",
+      "selector": "nav[aria-label=\"Workflow stages\"] a:has-text(\"Delivery\")",
+      "pauseAfter": 3600
+    },
+    {
+      "action": "scroll",
+      "y": 3000,
+      "pauseAfter": 4000
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text(\"Generate brand kit\")",
+      "pauseAfter": 900
+    },
+    {
+      "action": "wait",
+      "ms": 55000,
+      "speed": 7
+    },
+    {
+      "action": "wait",
+      "ms": 6000
+    },
+    {
+      "action": "scroll",
+      "y": 620,
+      "pauseAfter": 5200
+    },
+    {
+      "action": "scroll",
+      "y": 620,
+      "pauseAfter": 5200
+    },
+    {
+      "action": "scroll",
+      "y": 900,
+      "pauseAfter": 6620
+    },
+    {
+      "action": "click",
+      "selector": "button[aria-label=\"Open client presentation\"]",
+      "pauseAfter": 2400
+    },
+    {
+      "action": "wait",
+      "ms": 5400
+    },
+    {
+      "action": "scroll",
+      "y": 600,
+      "pauseAfter": 5200
+    },
+    {
+      "action": "scroll",
+      "y": 700,
+      "pauseAfter": 5200
+    },
+    {
+      "action": "scroll",
+      "y": 700,
+      "pauseAfter": 4800
+    },
+    {
+      "action": "scroll",
+      "y": -2000,
+      "pauseAfter": 2400
+    },
+    {
+      "action": "zoom",
+      "scale": 1.15,
+      "duration": 900,
+      "selector": "header h1"
+    },
+    {
+      "action": "wait",
+      "ms": 6000
+    },
+    {
+      "action": "zoom",
+      "scale": 1,
+      "duration": 800
+    },
+    {
+      "action": "wait",
+      "ms": 4000
+    }
+  ]
+}

@@ -201,7 +201,19 @@ export function DiscoveryStage() {
 
   return (
     <>
-      <StageHeader stage="discovery" />
+      <StageHeader
+        stage="discovery"
+        // Every other stage puts its primary action in the stage header.
+        // Discovery was the exception, which left the only way forward buried
+        // below however many questions the interview happened to produce.
+        action={
+          status !== "complete" && answered.length >= 4 ? (
+            <Button variant="accent" size="sm" onClick={completeDiscovery}>
+              Write the brief
+            </Button>
+          ) : undefined
+        }
+      />
 
       <div className="space-y-6">
         {/* Progress */}
