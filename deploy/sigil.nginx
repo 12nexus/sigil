@@ -65,6 +65,18 @@ server {
         proxy_buffering       off;
     }
 
+    # The product walkthrough video, served straight off disk rather than
+    # through the app container. Place the file at
+    # /var/www/sigil-static/walkthrough.mp4 — deploy.sh does not manage it.
+    location = /walkthrough.mp4 {
+        root /var/www/sigil-static;
+        try_files /walkthrough.mp4 =404;
+        types { } default_type video/mp4;
+        add_header Accept-Ranges bytes;
+        add_header Cache-Control "public, max-age=86400";
+        access_log off;
+    }
+
     location /_next/static/ {
         proxy_pass http://127.0.0.1:3210;
         proxy_http_version 1.1;
