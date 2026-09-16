@@ -9,7 +9,7 @@ limit_req_zone $binary_remote_addr zone=sigil_api:10m rate=30r/m;
 server {
     listen 80;
     listen [::]:80;
-    server_name sigil.12nexusbpo.com;
+    server_name __DOMAIN__;
 
     location /.well-known/acme-challenge/ {
         root /var/www/html;
@@ -23,7 +23,13 @@ server {
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
-    server_name sigil.12nexusbpo.com;
+    http2 on;
+    server_name __DOMAIN__;
+
+    ssl_certificate     __SSL_CERT__;
+    ssl_certificate_key __SSL_KEY__;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     # Generated artwork travels as base64 JSON; a batch response is large.
     client_max_body_size 32m;

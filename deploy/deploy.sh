@@ -56,60 +56,63 @@ else
   echo "  ! server key NOT detected — generation will fail"
 fi
 
-# ── 3. nginx ─────────────────────────────────────────────────────────
-echo "▸ Installing nginx site"
-sudo cp "$APP_DIR/deploy/sigil.nginx" "/etc/nginx/sites-available/$SITE_NAME"
-sudo ln -sf "/etc/nginx/sites-available/$SITE_NAME" "/etc/nginx/sites-enabled/$SITE_NAME"
+# ── 3. TLS certificate ───────────────────────────────────────────────
+# `certonly --webroot` never edits nginx configuration, so the site file
+# below is always exactly what this repository says it should be. Letting
+# `certbot --nginx` rewrite the config instead would silently discard the
+# rate limits and proxy timeouts on first install.
+echo "▸ TLS certificate"
+sudo mkdir -p /var/www/html
 
-# Certbot has not run yet on a first install, so the ssl directives would
-# point at a certificate that does not exist. Serve plain HTTP until then.
-if [[ ! -d "/etc/letsencrypt/live/$DOMAIN" ]]; then
-  echo "  ! No certificate yet — installing a temporary HTTP-only site"
+if [[ -d "/etc/letsencrypt/live/$DOMAIN" ]]; then
+  echo "  ✓ certificate already present"
+  HAVE_CERT=1
+else
+  # ACME needs port 80 answering for this host before the cert exists.
+  echo "  installing a temporary HTTP-only site for the ACME challenge"
   sudo tee "/etc/nginx/sites-available/$SITE_NAME" >/dev/null <<NGINX
 server {
     listen 80;
     listen [::]:80;
     server_name $DOMAIN;
     location /.well-known/acme-challenge/ { root /var/www/html; }
-    location / {
-        proxy_pass http://127.0.0.1:3210;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_read_timeout 600s;
-        proxy_send_timeout 600s;
-    }
+    location / { proxy_pass http://127.0.0.1:3210; proxy_set_header Host \$host; }
 }
 NGINX
+  sudo ln -sf "/etc/nginx/sites-available/$SITE_NAME" "/etc/nginx/sites-enabled/$SITE_NAME"
+  sudo nginx -t && sudo systemctl reload nginx
+
+  echo "  requesting a certificate for $DOMAIN"
+  if sudo certbot certonly --webroot -w /var/www/html -d "$DOMAIN" \
+       --non-interactive --agree-tos --register-unsafely-without-email; then
+    HAVE_CERT=1
+    echo "  ✓ certificate issued"
+  else
+    HAVE_CERT=0
+    echo "  ! certbot failed — the site will be served over plain HTTP."
+    echo "    Check that $DOMAIN resolves to this machine, then re-run."
+  fi
 fi
 
-sudo mkdir -p /var/www/html
+# ── 4. nginx site ────────────────────────────────────────────────────
+echo "▸ Installing nginx site"
+
+if [[ "${HAVE_CERT:-0}" == "1" ]]; then
+  sudo cp "$APP_DIR/deploy/sigil.nginx" "/etc/nginx/sites-available/$SITE_NAME"
+  sudo sed -i \
+    -e "s|__DOMAIN__|$DOMAIN|g" \
+    -e "s|__SSL_CERT__|/etc/letsencrypt/live/$DOMAIN/fullchain.pem|" \
+    -e "s|__SSL_KEY__|/etc/letsencrypt/live/$DOMAIN/privkey.pem|" \
+    "/etc/nginx/sites-available/$SITE_NAME"
+else
+  # No certificate: keep the HTTP-only site already written above.
+  echo "  serving HTTP only until a certificate exists"
+fi
+
+sudo ln -sf "/etc/nginx/sites-available/$SITE_NAME" "/etc/nginx/sites-enabled/$SITE_NAME"
 sudo nginx -t
 sudo systemctl reload nginx
 echo "  ✓ nginx reloaded"
-
-# ── 4. TLS ───────────────────────────────────────────────────────────
-if [[ ! -d "/etc/letsencrypt/live/$DOMAIN" ]]; then
-  echo "▸ Requesting a certificate for $DOMAIN"
-  sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
-    --register-unsafely-without-email --redirect || {
-      echo "! certbot failed — the site is still served over HTTP."
-      echo "  Check that $DOMAIN resolves to this machine, then re-run."
-    }
-  # Re-apply the full config now that the certificate exists, so the
-  # rate limits and proxy timeouts are not lost to certbot's rewrite.
-  if [[ -d "/etc/letsencrypt/live/$DOMAIN" ]]; then
-    sudo cp "$APP_DIR/deploy/sigil.nginx" "/etc/nginx/sites-available/$SITE_NAME"
-    sudo sed -i "s|listen 443 ssl;|listen 443 ssl;\n    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;\n    include /etc/letsencrypt/options-ssl-nginx.conf;\n    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;|" \
-      "/etc/nginx/sites-available/$SITE_NAME"
-    sudo nginx -t && sudo systemctl reload nginx
-    echo "  ✓ TLS enabled"
-  fi
-else
-  echo "  ✓ certificate already present"
-fi
 
 # ── 5. Verify ────────────────────────────────────────────────────────
 echo "▸ Verifying"
