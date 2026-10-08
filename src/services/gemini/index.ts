@@ -53,7 +53,7 @@ import type {
   Project,
   QualityCheck,
 } from "@/types";
-import { requestImage, requestText } from "./client";
+import { projectHeader, requestImage, requestText } from "./client";
 import { GeminiError } from "./errors";
 import {
   brandBriefSchema,
@@ -293,6 +293,8 @@ export interface LogoImageResult {
   model: string;
   prompt: string;
   durationMs: number;
+  /** Set when the server already stored the image for the project. */
+  assetId?: string;
 }
 
 /**
@@ -306,6 +308,8 @@ export async function generateLogoImage(
     model?: string;
     referenceImages?: Array<{ mimeType: string; data: string }>;
     signal?: AbortSignal;
+    /** The server stores the image under this project as soon as it is generated. */
+    projectId?: string;
   },
 ): Promise<LogoImageResult> {
   const prompt = buildImagePrompt(input);
@@ -318,11 +322,13 @@ export async function generateLogoImage(
       prompt,
       aspectRatio: settings.aspectRatio,
       referenceImages: options?.referenceImages,
+      projectId: options?.projectId,
     },
     options?.signal,
   );
 
   return {
+    assetId: result.assetId,
     mimeType: result.mimeType,
     data: result.data,
     model: result.model || model,
@@ -418,7 +424,7 @@ async function critiqueWithVision<T>(
 }
 
 function visionHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...projectHeader() };
   try {
     const raw = window.localStorage.getItem("sigil.settings");
     if (raw) {

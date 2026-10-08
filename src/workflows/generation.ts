@@ -217,9 +217,10 @@ export interface ExecutorContext {
 }
 
 /**
- * Executes one job item. Every branch ends with the artwork written to
- * IndexedDB before the item is reported done, so a completed item survives a
- * refresh even if the rest of the batch later fails.
+ * Executes one job item. The server stores each image the moment Gemini
+ * returns it, and every branch ends with the artwork saved before the item is
+ * reported done, so a completed item survives a refresh even if the rest of
+ * the batch later fails.
  */
 export function makeExecutor(ctx: ExecutorContext) {
   return async (item: JobItem, signal: AbortSignal): Promise<{ conceptId?: string }> => {
@@ -260,8 +261,8 @@ async function executeExploration(
     includeWordmark: true,
   };
 
-  const image = await generateLogoImage(input, ctx.settings, { signal });
-  const assetId = await saveAsset(project.id, image.data, image.mimeType);
+  const image = await generateLogoImage(input, ctx.settings, { signal, projectId: project.id });
+  const assetId = image.assetId ?? (await saveAsset(project.id, image.data, image.mimeType));
 
   const concept = buildConcept({
     project,
@@ -313,9 +314,10 @@ async function executeIteration(
 
   const image = await generateLogoImage(input, ctx.settings, {
     signal,
+    projectId: project.id,
     referenceImages: reference ? [reference] : undefined,
   });
-  const assetId = await saveAsset(project.id, image.data, image.mimeType);
+  const assetId = image.assetId ?? (await saveAsset(project.id, image.data, image.mimeType));
 
   const concept = buildConcept({
     project,
@@ -377,9 +379,10 @@ async function executeLockup(
     // Lockups are deliverables — use the higher-fidelity model.
     model: ctx.settings.finalistImageModel,
     signal,
+    projectId: project.id,
     referenceImages: reference ? [reference] : undefined,
   });
-  const assetId = await saveAsset(project.id, image.data, image.mimeType);
+  const assetId = image.assetId ?? (await saveAsset(project.id, image.data, image.mimeType));
 
   await ctx.onLockup(concept.id, {
     kind,

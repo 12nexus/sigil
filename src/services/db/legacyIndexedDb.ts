@@ -2,12 +2,10 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { GenerationJob, Project } from "@/types";
 
 /**
- * Local-first persistence.
+ * The browser database SIGIL used before storage moved to the server.
  *
- * Projects and generated artwork live in IndexedDB so the studio survives page
- * refreshes and works offline for everything except generation. Image bytes are
- * stored as Blobs in a separate object store, keyed by asset id, so loading the
- * dashboard never deserialises megabytes of base64.
+ * Nothing writes here any more. It is read once per browser by
+ * `importLegacyData()` so projects created before the move are carried over.
  */
 
 export const DB_NAME = "sigil";
@@ -71,9 +69,10 @@ export function getDb(): Promise<IDBPDatabase<SigilDB>> {
   return dbPromise;
 }
 
-/** Rough storage usage, shown on the Settings page. */
-export async function estimateStorage(): Promise<{ usage: number; quota: number } | null> {
-  if (typeof navigator === "undefined" || !navigator.storage?.estimate) return null;
-  const { usage = 0, quota = 0 } = await navigator.storage.estimate();
-  return { usage, quota };
+/** True if this browser has the old database, without creating it as a side effect. */
+export async function hasLegacyDb(): Promise<boolean> {
+  if (typeof indexedDB === "undefined") return false;
+  if (typeof indexedDB.databases !== "function") return true;
+  const dbs = await indexedDB.databases();
+  return dbs.some((d) => d.name === DB_NAME);
 }

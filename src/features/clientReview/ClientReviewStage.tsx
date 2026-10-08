@@ -319,10 +319,9 @@ export function ClientReviewStage() {
                   </IconButton>
                 </div>
                 <p className="mt-2 text-[11px] leading-relaxed text-faint">
-                  SIGIL stores everything in this browser, so this link opens the live
-                  presentation on this machine. To send it to a client on another device,
-                  connect a backend — the data layer is built to be swapped without
-                  touching the UI.
+                  Projects are stored on SIGIL&apos;s server, so this link opens the live
+                  presentation on any machine. Every page sits behind SIGIL&apos;s sign-in,
+                  so a client without the login needs a screen share or the PDF export.
                 </p>
               </div>
             </div>

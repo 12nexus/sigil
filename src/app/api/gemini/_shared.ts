@@ -29,3 +29,16 @@ export function errorResponse(err: unknown): Response {
 
   return Response.json({ error: payload }, { status: httpStatus });
 }
+
+/** Header the browser uses to say which project a generation belongs to. */
+export const PROJECT_HEADER = "x-sigil-project";
+
+export function projectFromRequest(req: NextRequest, body?: { projectId?: unknown }): string | null {
+  const value = (typeof body?.projectId === "string" ? body.projectId : null) ?? req.headers.get(PROJECT_HEADER);
+  return value && /^[A-Za-z0-9_-]{1,100}$/.test(value) ? value : null;
+}
+
+/** The error text that goes into the generation log, with anything key-shaped removed. */
+export function logError(err: unknown): string {
+  return redact(GeminiError.from(err).message);
+}

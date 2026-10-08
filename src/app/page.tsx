@@ -18,6 +18,7 @@ import { ProjectCard } from "@/features/dashboard/ProjectCard";
 import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/useToast";
 import { projectRepository } from "@/services/db/repository";
+import { importLegacyData } from "@/services/db/legacyImport";
 import { buildDemoProject } from "@/data/demoProject";
 import type { ProjectSummary } from "@/types";
 
@@ -39,12 +40,39 @@ export default function DashboardPage() {
       console.error(err);
       push({
         tone: "error",
-        title: "Could not read local storage",
-        body: "SIGIL stores projects in your browser. Private browsing can block this.",
+        title: "Could not load projects",
+        body: "SIGIL's server did not answer. Check your connection and reload.",
       });
       setProjects([]);
     }
   }, [push]);
+
+  /* Carry over any projects this browser created before storage moved to the server. */
+  useEffect(() => {
+    let active = true;
+    void importLegacyData()
+      .then(async (result) => {
+        if (!active || !result || result.projects + result.assets + result.failed === 0) return;
+        await refresh();
+        push(
+          result.failed
+            ? {
+                tone: "error",
+                title: "Some projects could not be moved to the server",
+                body: `${result.failed} project(s) are still only in this browser. Reload to try again.`,
+              }
+            : {
+                tone: "success",
+                title: `Moved ${result.projects} project(s) to the server`,
+                body: "Projects from this browser are now saved centrally and open on any machine.",
+              },
+        );
+      })
+      .catch((err) => console.error("[sigil] legacy import failed", err));
+    return () => {
+      active = false;
+    };
+  }, [refresh, push]);
 
   useEffect(() => {
     let active = true;
@@ -267,7 +295,7 @@ export default function DashboardPage() {
         loading={busy}
         title="Delete this project?"
         confirmLabel="Delete permanently"
-        body="This removes the project, every generated concept, and all of its artwork from local storage. It cannot be undone — archive it instead if you only want it out of the way."
+        body="This removes the project, every generated concept, and all of its artwork from SIGIL's database. It cannot be undone — archive it instead if you only want it out of the way."
       />
     </div>
   );

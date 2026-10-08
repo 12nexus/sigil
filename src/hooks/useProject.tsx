@@ -10,6 +10,8 @@ import {
   useState,
 } from "react";
 import { projectRepository } from "@/services/db/repository";
+import { api, StorageError } from "@/services/db/api";
+import { setActiveProject } from "@/services/gemini/client";
 import type { Project, StageId, TimelineEvent } from "@/types";
 import { computeStageStates } from "@/workflows/stages";
 import { timelineEvent } from "@/workflows/projectFactory";
@@ -48,7 +50,7 @@ export function ProjectProvider({
   /**
    * Writes are serialised through a promise chain so rapid mutations (a batch
    * finishing while the designer is also clicking) can never interleave and
-   * clobber each other in IndexedDB.
+   * clobber each other on the server.
    */
   const writeQueue = useRef<Promise<unknown>>(Promise.resolve());
   const latest = useRef<Project | null>(null);
@@ -65,6 +67,12 @@ export function ProjectProvider({
     }
     setLoading(false);
   }, []);
+
+  /* Tag this tab's Gemini calls with the open project for the generation log. */
+  useEffect(() => {
+    setActiveProject(projectId);
+    return () => setActiveProject(null);
+  }, [projectId]);
 
   /* Initial load. Every state write happens after the await, so opening a
      project costs one render rather than a cascade. */
@@ -111,7 +119,7 @@ export function ProjectProvider({
       setSaving(true);
 
       writeQueue.current = writeQueue.current
-        .then(() => projectRepository.save(next))
+        .then(() => saveWithRetry(next))
         .then((saved) => {
           // Keep the persisted updatedAt without stomping newer in-memory edits.
           if (latest.current?.id === saved.id) {
@@ -120,7 +128,11 @@ export function ProjectProvider({
         })
         .catch((err) => {
           console.error("[sigil] save failed", err);
-          setError("Changes could not be saved to local storage.");
+          setError(
+            err instanceof StorageError && err.status === 409
+              ? "This project was changed in another tab or by someone else, so your last change was not saved. Reload the page to continue from the latest version."
+              : "Changes could not be saved to the server. Reload the page; anything saved before this is safe.",
+          );
         })
         .finally(() => setSaving(false));
 
@@ -143,6 +155,47 @@ export function ProjectProvider({
   );
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
+}
+
+/**
+ * Saves ride out short network or server blips. A conflict is never retried:
+ * someone else's newer work must not be overwritten.
+ */
+async function saveWithRetry(project: Project): Promise<Project> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await projectRepository.save(project);
+    } catch (err) {
+      const conflict = err instanceof StorageError && err.status === 409;
+      // A retried save whose first attempt did land looks like a conflict.
+      if (conflict && attempt > 0 && (await alreadySaved(project))) {
+        return (await projectRepository.get(project.id)) ?? project;
+      }
+      if (conflict || attempt >= 3) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+    }
+  }
+}
+
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, v) =>
+    v && typeof v === "object" && !Array.isArray(v)
+      ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, (v as Record<string, unknown>)[k]]))
+      : v,
+  );
+}
+
+async function alreadySaved(project: Project): Promise<boolean> {
+  try {
+    const { project: latest } = await api<{ project: Project }>(
+      `/api/projects/${encodeURIComponent(project.id)}`,
+    );
+    // The database stores JSON with its keys reordered, so compare canonically.
+    const strip = (p: Project) => canonical({ ...p, updatedAt: undefined });
+    return strip(latest) === strip(project);
+  } catch {
+    return false;
+  }
 }
 
 export function useProject(): ProjectContextValue {

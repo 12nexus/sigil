@@ -8,9 +8,10 @@ import { mkdirSync } from "node:fs";
 
 const BASE = process.env.SIGIL_URL || "http://localhost:3210";
 const SHOTS = process.env.SHOT_DIR || "./e2e/shots";
-/* A persistent profile keeps IndexedDB between runs, so re-running the
+/* Projects and artwork live in SIGIL's database, so re-running the
    walkthrough reuses artwork that has already been generated and paid for.
-   Delete e2e/.profile for a genuinely cold run. */
+   The persistent profile keeps the browser session between runs. Use a
+   fresh database for a genuinely cold run. */
 const PROFILE = process.env.SIGIL_PROFILE || "./e2e/.profile";
 mkdirSync(SHOTS, { recursive: true });
 

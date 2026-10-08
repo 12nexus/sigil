@@ -26,13 +26,17 @@ if ! grep -qE '^GEMINI_API_KEY=.+' .env; then
   echo "✗ GEMINI_API_KEY is empty in .env"
   exit 1
 fi
+if ! grep -qE '^POSTGRES_PASSWORD=[A-Za-z0-9]+$' .env; then
+  echo "✗ POSTGRES_PASSWORD must be set in .env (letters and digits only: openssl rand -hex 24)"
+  exit 1
+fi
 for var in SIGIL_AUTH_USERNAME SIGIL_AUTH_PASSWORD; do
   if ! grep -qE "^${var}=.+" .env; then
     echo "✗ $var is empty in .env — SIGIL will not start without sign-in credentials"
     exit 1
   fi
 done
-echo "  ✓ .env present with a key and sign-in credentials"
+echo "  ✓ .env present with a key, sign-in credentials and a database password"
 
 # ── 2. Build and start the container ─────────────────────────────────
 echo "▸ Building image"

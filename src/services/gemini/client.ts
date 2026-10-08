@@ -7,6 +7,21 @@ import { GeminiError } from "./errors";
  */
 
 const KEY_HEADER = "x-sigil-key";
+const PROJECT_HEADER = "x-sigil-project";
+
+/**
+ * The project open in this tab. Sent with every Gemini request so the
+ * server's generation log records which project each call belonged to.
+ */
+let activeProjectId: string | null = null;
+
+export function setActiveProject(projectId: string | null): void {
+  activeProjectId = projectId;
+}
+
+export function projectHeader(): Record<string, string> {
+  return activeProjectId ? { [PROJECT_HEADER]: activeProjectId } : {};
+}
 
 /** Read the optional user key from Settings, if the user opted into one. */
 function keyOverride(): string | null {
@@ -25,7 +40,7 @@ function keyOverride(): string | null {
 }
 
 async function post<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...projectHeader() };
   const override = keyOverride();
   if (override) headers[KEY_HEADER] = override;
 
@@ -66,6 +81,8 @@ export interface RawImageResult {
   data: string;
   model: string;
   text?: string;
+  /** Present when the server stored the image under the request's project. */
+  assetId?: string;
 }
 
 export function requestText(
@@ -89,6 +106,7 @@ export function requestImage(
     prompt: string;
     aspectRatio?: string;
     referenceImages?: Array<{ mimeType: string; data: string }>;
+    projectId?: string;
   },
   signal?: AbortSignal,
 ): Promise<RawImageResult> {

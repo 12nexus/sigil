@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { generateVisionText } from "@/services/gemini/transport";
-import { errorResponse, keyFromRequest } from "../_shared";
+import { errorResponse, keyFromRequest, logError, projectFromRequest } from "../_shared";
+import { logGeneration } from "@/server/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,9 +13,11 @@ export const maxDuration = 300;
  * actually generated, not the prompt that requested it.
  */
 export async function POST(req: NextRequest) {
+  const started = Date.now();
+  let body: any;
   try {
     const key = keyFromRequest(req);
-    const body = await req.json();
+    body = await req.json();
 
     if (typeof body?.model !== "string" || typeof body?.prompt !== "string") {
       return Response.json(
@@ -35,8 +38,29 @@ export async function POST(req: NextRequest) {
       req.signal,
     );
 
+    await logGeneration({
+      kind: "vision",
+      model: body.model,
+      projectId: projectFromRequest(req),
+      ok: true,
+      durationMs: Date.now() - started,
+      prompt: body.prompt,
+      response: result.text,
+    });
+
     return Response.json(result);
   } catch (err) {
+    if (typeof body?.prompt === "string") {
+      await logGeneration({
+        kind: "vision",
+        model: body.model,
+        projectId: projectFromRequest(req),
+        ok: false,
+        durationMs: Date.now() - started,
+        prompt: body.prompt,
+        error: logError(err),
+      });
+    }
     return errorResponse(err);
   }
 }

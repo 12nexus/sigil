@@ -1,10 +1,32 @@
 # SIGIL — production compose.
 #
-# The container binds to 127.0.0.1 only: the host's nginx terminates TLS
+# The app container binds to 127.0.0.1 only: the host's nginx terminates TLS
 # and proxies to it, so the app is never directly reachable from the
-# internet on its own port.
+# internet on its own port. The database has no published port at all; only
+# the app reaches it, over this project's private network.
 
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: sigil-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sigil
+      POSTGRES_USER: sigil
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+    volumes:
+      - sigil-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sigil -d sigil"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   sigil:
     build:
       context: .
@@ -23,9 +45,14 @@ services:
     image: sigil:latest
     container_name: sigil
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "127.0.0.1:3210:3210"
     environment:
+      # Projects, artwork, jobs, settings and the generation log.
+      DATABASE_URL: postgresql://sigil:${POSTGRES_PASSWORD}@db:5432/sigil
       # Server-only. Never reaches the browser bundle.
       GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY must be set in .env}
       # Operator sign-in. The app refuses every request without these.
@@ -39,3 +66,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  sigil-db:

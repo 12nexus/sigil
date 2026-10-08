@@ -1,15 +1,13 @@
 import type { GenerationJob, Project, ProjectSummary } from "@/types";
-import { stageProgress } from "@/workflows/stages";
-import { getDb } from "./database";
-import { copyProjectAssets, deleteProjectAssets } from "./assetStore";
-import { newId, newShareToken } from "@/utils/id";
+import { api, json, StorageError } from "./api";
 
 /**
  * The storage contract.
  *
  * Everything above this line in the application talks to `ProjectRepository`,
- * never to IndexedDB directly. Swapping in Supabase/Postgres later means
- * writing one new class that satisfies this interface — no component changes.
+ * never to the storage API directly. Projects, artwork and jobs live in
+ * SIGIL's server-side database, so they survive browser resets and are the
+ * same on every machine.
  */
 export interface ProjectRepository {
   list(includeArchived?: boolean): Promise<ProjectSummary[]>;
@@ -25,153 +23,113 @@ export interface ProjectRepository {
   removeJob(jobId: string): Promise<void>;
 }
 
-function summarise(project: Project): ProjectSummary {
-  const live = project.concepts.filter((c) => c.status !== "archived");
-  const cover =
-    project.concepts.find((c) => c.status === "approved")?.primaryAssetId ??
-    project.concepts.find((c) => c.status === "finalist")?.primaryAssetId ??
-    project.concepts.find((c) => c.status === "shortlisted")?.primaryAssetId ??
-    project.concepts.find((c) => c.primaryAssetId)?.primaryAssetId;
-
-  return {
-    id: project.id,
-    companyName: project.companyName,
-    industry: project.industry,
-    status: project.status,
-    stage: project.stage,
-    conceptCount: live.length,
-    finalistCount: project.finalistIds.length,
-    directionCount: project.directions.length,
-    approvedDirectionCount: project.directions.filter((d) => d.status === "approved").length,
-    progress: stageProgress(project),
-    isDemo: project.isDemo,
-    createdAt: project.createdAt,
-    updatedAt: project.updatedAt,
-    coverAssetId: cover,
-  };
+interface Stored {
+  project: Project;
+  revision: number;
 }
 
-class IndexedDbProjectRepository implements ProjectRepository {
+class HttpProjectRepository implements ProjectRepository {
+  /**
+   * The revision each project was last read or written at, in this tab. A save
+   * sends it back, and the server refuses the write if someone else saved in
+   * between, rather than silently overwriting their work.
+   */
+  private revisions = new Map<string, number>();
+
+  private remember(stored: Stored): Project {
+    this.revisions.set(stored.project.id, stored.revision);
+    return stored.project;
+  }
+
   async list(includeArchived = false): Promise<ProjectSummary[]> {
-    const db = await getDb();
-    const all = await db.getAll("projects");
-    return all
-      .filter((p) => includeArchived || p.status !== "archived")
-      .map(summarise)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const { projects } = await api<{ projects: ProjectSummary[] }>(
+      `/api/projects${includeArchived ? "?archived=1" : ""}`,
+    );
+    return projects;
   }
 
   async get(id: string): Promise<Project | undefined> {
-    const db = await getDb();
-    return db.get("projects", id);
+    try {
+      return this.remember(await api<Stored>(`/api/projects/${encodeURIComponent(id)}`));
+    } catch (err) {
+      if (err instanceof StorageError && err.status === 404) return undefined;
+      throw err;
+    }
   }
 
   async create(project: Project): Promise<Project> {
-    const db = await getDb();
-    await db.put("projects", project);
-    return project;
+    return this.remember(
+      await api<Stored>("/api/projects", { method: "POST", body: json({ project }) }),
+    );
   }
 
   async save(project: Project): Promise<Project> {
-    const next = { ...project, updatedAt: new Date().toISOString() };
-    const db = await getDb();
-    await db.put("projects", next);
-    return next;
+    const stored = await api<Stored>(`/api/projects/${encodeURIComponent(project.id)}`, {
+      method: "PUT",
+      body: json({ project, revision: this.revisions.get(project.id) ?? null }),
+    });
+    return this.remember(stored);
   }
 
-  /**
-   * Duplication copies the full design history, including artwork, and remaps
-   * every asset reference so the two projects never share blobs.
-   */
   async duplicate(id: string): Promise<Project | undefined> {
-    const source = await this.get(id);
-    if (!source) return undefined;
-
-    const newProjectId = newId("proj");
-    const assetMap = await copyProjectAssets(id, newProjectId);
-    const remap = (assetId?: string) =>
-      assetId ? (assetMap.get(assetId) ?? assetId) : assetId;
-
-    const copy: Project = {
-      ...structuredClone(source),
-      id: newProjectId,
-      companyName: `${source.companyName} (copy)`,
-      status: "active",
-      isDemo: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      archivedAt: undefined,
-      clientReview: {
-        ...structuredClone(source.clientReview),
-        shareToken: newShareToken(),
-        published: false,
-        publishedAt: undefined,
-      },
-    };
-
-    copy.concepts = copy.concepts.map((c) => ({
-      ...c,
-      primaryAssetId: remap(c.primaryAssetId),
-      assets: c.assets.map((a) => ({ ...a, assetId: remap(a.assetId)! })),
-      typography: {
-        ...c.typography,
-        reconstructedWordmarkAssetId: remap(c.typography.reconstructedWordmarkAssetId),
-      },
-    }));
-
-    copy.timeline = [
-      ...copy.timeline,
-      {
-        id: newId("evt"),
-        at: new Date().toISOString(),
-        kind: "system",
-        title: "Project duplicated",
-        detail: `Copied from "${source.companyName}" with its full design history.`,
-      },
-    ];
-
-    const db = await getDb();
-    await db.put("projects", copy);
-    return copy;
+    try {
+      return this.remember(
+        await api<Stored>(`/api/projects/${encodeURIComponent(id)}/duplicate`, { method: "POST" }),
+      );
+    } catch (err) {
+      if (err instanceof StorageError && err.status === 404) return undefined;
+      throw err;
+    }
   }
 
   async archive(id: string, archived: boolean): Promise<void> {
-    const project = await this.get(id);
-    if (!project) return;
-    await this.save({
+    await updateProject(id, (project) => ({
       ...project,
       status: archived ? "archived" : "active",
       archivedAt: archived ? new Date().toISOString() : undefined,
-    });
+    }));
   }
 
   async remove(id: string): Promise<void> {
-    const db = await getDb();
-    await deleteProjectAssets(id);
-    const tx = db.transaction("jobs", "readwrite");
-    for await (const cursor of tx.store.index("by-project").iterate(id)) {
-      await cursor.delete();
-    }
-    await tx.done;
-    await db.delete("projects", id);
+    await api(`/api/projects/${encodeURIComponent(id)}`, { method: "DELETE" });
+    this.revisions.delete(id);
   }
 
   async listJobs(projectId: string): Promise<GenerationJob[]> {
-    const db = await getDb();
-    const jobs = await db.getAllFromIndex("jobs", "by-project", projectId);
-    return jobs.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const { jobs } = await api<{ jobs: GenerationJob[] }>(
+      `/api/projects/${encodeURIComponent(projectId)}/jobs`,
+    );
+    return jobs;
   }
 
   async saveJob(job: GenerationJob): Promise<void> {
-    const db = await getDb();
-    await db.put("jobs", { ...job, updatedAt: new Date().toISOString() });
+    await api(`/api/jobs/${encodeURIComponent(job.id)}`, { method: "PUT", body: json({ job }) });
   }
 
   async removeJob(jobId: string): Promise<void> {
-    const db = await getDb();
-    await db.delete("jobs", jobId);
+    await api(`/api/jobs/${encodeURIComponent(jobId)}`, { method: "DELETE" });
   }
 }
 
-export const projectRepository: ProjectRepository = new IndexedDbProjectRepository();
-export { summarise as summariseProject };
+export const projectRepository: ProjectRepository = new HttpProjectRepository();
+
+/**
+ * Apply a small change to the latest saved copy of a project. Used where a
+ * page holds no long-lived copy of its own (the client presentation, the
+ * dashboard), so a change made elsewhere is merged rather than refused.
+ */
+export async function updateProject(
+  id: string,
+  mutate: (project: Project) => Project,
+): Promise<Project> {
+  for (let attempt = 0; ; attempt++) {
+    const latest = await projectRepository.get(id);
+    if (!latest) throw new StorageError("This project no longer exists.", 404, "NOT_FOUND");
+    try {
+      return await projectRepository.save(mutate(latest));
+    } catch (err) {
+      if (!(err instanceof StorageError && err.status === 409) || attempt >= 2) throw err;
+    }
+  }
+}
+export { summariseProject } from "./projectData";

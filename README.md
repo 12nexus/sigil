@@ -43,11 +43,13 @@ Identity: ink `#08080B`, bone `#F2EFE9`, champagne `#DDB876`, with violet
 ```bash
 cd sigil
 npm install
-cp .env.example .env.local     # set GEMINI_API_KEY, SIGIL_AUTH_USERNAME, SIGIL_AUTH_PASSWORD
+cp .env.example .env.local     # set GEMINI_API_KEY, SIGIL_AUTH_USERNAME, SIGIL_AUTH_PASSWORD, DATABASE_URL
 npm run dev                    # http://localhost:3210
 ```
 
 Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+`npm run dev` needs a PostgreSQL database in `DATABASE_URL`; SIGIL creates its
+tables on first use. `docker compose up` runs one for you.
 
 On first run, click **Open the Nexora sample** on the dashboard. It arrives
 seeded through to approved creative directions, so the very next click runs the
@@ -67,7 +69,8 @@ real generation pipeline.
 ## Configuration
 
 Everything is set by environment variable and overridable at runtime from
-**Settings**. Nothing in the UI hardcodes a model name.
+**Settings**. Settings changed there are saved on the server and apply to
+everyone. Nothing in the UI hardcodes a model name.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -75,6 +78,8 @@ Everything is set by environment variable and overridable at runtime from
 | `SIGIL_AUTH_USERNAME` | *(required)* | **Server-only.** Sign-in username. |
 | `SIGIL_AUTH_PASSWORD` | *(required)* | **Server-only.** Sign-in password. |
 | `SIGIL_AUTH_SECRET` | *(empty)* | Optional extra session-signing secret. |
+| `POSTGRES_PASSWORD` | *(required for Docker)* | Password for the bundled PostgreSQL. Letters and digits only. |
+| `DATABASE_URL` | *(set by compose)* | **Server-only.** PostgreSQL connection string. Set it yourself only outside Docker. |
 | `NEXT_PUBLIC_GEMINI_TEXT_MODEL` | `gemini-3.8-flash` | Discovery interview |
 | `NEXT_PUBLIC_GEMINI_REASONING_MODEL` | `gemini-3.8-flash` | Brief, directions, critique, iteration |
 | `NEXT_PUBLIC_GEMINI_IMAGE_MODEL` | `gemini-3.1-flash-image` | Exploration batches (Nano Banana 2) |
@@ -149,6 +154,9 @@ client's, final), then the full logo system, a brand kit, and exports.
 src/
   app/                      Routes
     api/gemini/             Server-only Gemini proxy (text · image · vision · status)
+    api/projects, jobs,     Storage API: projects, batch jobs, images, settings,
+      assets, settings,       storage stats, and the one-time browser import
+      storage, import/
     projects/[id]/          The ten stages + history
     present/[id]/           Client presentation (light theme)
     brandkit/[id]/          Printable brand kit
@@ -157,7 +165,8 @@ src/
   features/                 One folder per stage + shared concept library
   services/
     gemini/                 transport · typed service · schemas · config · errors
-    db/                     IndexedDB + repository abstraction
+    db/                     Repository abstraction over the storage API
+  server/                   PostgreSQL access, schema migrations, the store
   prompts/                  All prompts, composed from structured data
   workflows/                Stages, batch runner, generation, mutations
   types/                    The domain model
@@ -174,7 +183,7 @@ src/
    `generateLogoImage()`, `critiqueLogoConcept()`, `generateLogoIterations()`,
    `analyzeClientFeedback()`, `generateFinalizationInstructions()`,
    `generateBrandKit()`.
-3. **No component touches IndexedDB.** They go through `ProjectRepository`.
+3. **No component calls the storage API directly.** They go through `ProjectRepository`.
 4. **Every structured call is schema-constrained and validated** before it
    reaches the domain model.
 
@@ -192,11 +201,31 @@ Positive and negative constraints accumulate from rejections, your notes, and
 client feedback, and are injected into every subsequent generation. They are
 visible and switchable in the left rail — you control what the AI remembers.
 
-### Swapping the storage backend
+### Storage
 
-[`ProjectRepository`](src/services/db/repository.ts) is a plain interface with
-one IndexedDB implementation. Writing a Supabase or Postgres implementation
-means satisfying that interface — no component changes.
+Everything persistent lives in PostgreSQL (`src/server/`), behind the same
+sign-in as the rest of the app:
+
+| Table | What it holds |
+| --- | --- |
+| `projects` | Each project as one JSON document, a dashboard summary, and a revision number |
+| `assets` | Every image's bytes, deleted together with its project |
+| `jobs` | Batch-generation state, so a batch can resume after a refresh |
+| `generations` | One row per Gemini call: kind, model, project, prompt, response or error, duration |
+| `settings` | The shared settings from the Settings page |
+
+- **Images are stored as they are generated.** `/api/gemini/image` writes the
+  image to the database the moment Gemini returns it, before the browser gets
+  it, so closing a tab mid-batch never loses a finished image.
+- **Saves cannot silently overwrite each other.** Every save carries the
+  revision it was based on; if someone else saved in between, the server
+  refuses it (409) and the workspace asks for a reload. Client feedback from
+  the presentation is merged onto the latest copy instead.
+- **Browser data from older versions is imported automatically**, once per
+  browser, the first time the dashboard opens. It is idempotent and never
+  deletes the browser copy.
+- Schema changes are numbered migrations in `src/server/db.ts`, applied on
+  first use under an advisory lock.
 
 ---
 
@@ -213,7 +242,8 @@ means satisfying that interface — no component changes.
 - Client information reaches Gemini only inside the prompts needed to do the
   design work.
 - **If you enable a browser-stored key in Settings**, it is held in
-  `localStorage` and is readable by anything running on that origin. It is
+  `localStorage` and is readable by anything running on that origin. It is the
+  one setting that is never sent to the server. It is
   offered for convenience when trying the app; the environment key is the
   correct production setup.
 - `.env.local` is gitignored. `.env.example` contains no secrets.
@@ -251,11 +281,10 @@ authoritative company name you typed, a verified/unverified flag, and real
 typeface recommendations for rebuilding the wordmark properly. The finalists
 stage warns you if you are about to present an unverified wordmark.
 
-**3 · The client link is local-first.** Projects live in IndexedDB, so
-`/present/[id]` serves the live presentation from the browser it was created in.
-Sending the link to a client on another machine requires a backend — which is
-what the repository abstraction exists for. Until then, present over a screen
-share, or export the presentation as PDF.
+**3 · The client link needs the SIGIL login.** Projects are stored on the
+server, so `/present/[id]` opens from any machine, but every page sits behind
+the single operator sign-in. To show a client without sharing the login,
+present over a screen share or export the presentation as PDF.
 
 **4 · PDF export goes through the browser.** The presentation and brand kit are
 laid out as real print documents and printed via the browser's own PDF engine.
@@ -308,8 +337,8 @@ for exploration, and `gemini-3-pro-image` for lockups and delivery assets.
 
 ## Optional next steps
 
-- A backend (Supabase/Postgres + object storage) to make client links shareable
-  and enable real multi-user review.
+- Public, token-based client links (the share token already exists) so clients
+  can review without the operator login.
 - Per-user accounts and quotas in place of the single operator login.
 - Vector handoff: export the approved mark into an SVG scaffold with correct
   clear-space and a properly set wordmark for a designer to finish.

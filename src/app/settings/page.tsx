@@ -27,7 +27,7 @@ import {
   KNOWN_TEXT_MODELS,
   MODEL_NOTES,
 } from "@/services/gemini/config";
-import { estimateStorage } from "@/services/db/database";
+import { api } from "@/services/db/api";
 import type { GeminiErrorCode } from "@/types";
 import { formatBytes } from "@/utils/format";
 
@@ -42,10 +42,18 @@ export default function SettingsPage() {
     imageModels: string[];
   } | null>(null);
   const [error, setError] = useState<{ message: string; code: GeminiErrorCode } | null>(null);
-  const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null);
+  const [storage, setStorage] = useState<{
+    projects: number;
+    assets: number;
+    assetBytes: number;
+    generations: number;
+    databaseBytes: number;
+  } | null>(null);
 
   useEffect(() => {
-    void estimateStorage().then(setStorage);
+    void api<NonNullable<typeof storage>>("/api/storage")
+      .then(setStorage)
+      .catch(() => setStorage(null));
   }, []);
 
   const runCheck = async () => {
@@ -206,7 +214,7 @@ export default function SettingsPage() {
                 <h2 className="text-[14px] text-ink">Models</h2>
                 <p className="mt-1 text-[12px] leading-relaxed text-muted">
                   Defaults come from environment variables. Anything set here overrides them
-                  for this browser.
+                  for everyone using SIGIL.
                 </p>
               </div>
             </div>
@@ -341,16 +349,17 @@ export default function SettingsPage() {
             <div className="flex items-start gap-3">
               <Database size={16} className="mt-0.5 shrink-0 text-accent" />
               <div className="min-w-0 flex-1">
-                <h2 className="text-[14px] text-ink">Local storage</h2>
+                <h2 className="text-[14px] text-ink">Storage</h2>
                 <p className="mt-1 text-[12px] leading-relaxed text-muted">
-                  Projects and generated artwork live in this browser&apos;s IndexedDB. They
-                  survive refreshes and restarts, and never leave your machine except as the
-                  prompts sent to Gemini.
+                  Projects, generated artwork, batch jobs and a log of every Gemini call are
+                  saved in SIGIL&apos;s server database as they happen. They are the same on
+                  every machine and are backed up nightly.
                 </p>
                 {storage ? (
                   <p className="mt-3 text-[12px] text-faint">
-                    Using {formatBytes(storage.usage)}
-                    {storage.quota ? ` of roughly ${formatBytes(storage.quota)} available` : ""}
+                    {storage.projects} projects · {storage.assets} images (
+                    {formatBytes(storage.assetBytes)}) · {storage.generations} generations
+                    logged · database {formatBytes(storage.databaseBytes)}
                   </p>
                 ) : null}
               </div>

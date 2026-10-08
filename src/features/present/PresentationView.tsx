@@ -13,7 +13,7 @@ import { ConceptImage } from "@/components/ConceptImage";
 import { SigilGlyph } from "@/components/brand/SigilLogo";
 import { Button } from "@/components/ui/Button";
 import { LoadingBlock } from "@/components/ui/Primitives";
-import { projectRepository } from "@/services/db/repository";
+import { projectRepository, updateProject } from "@/services/db/repository";
 import type { ClientDecision, LogoConcept, Project } from "@/types";
 import { newId } from "@/utils/id";
 import { cn } from "@/utils/cn";
@@ -80,14 +80,14 @@ export function PresentationView({ projectId }: { projectId: string }) {
         interpretationStatus: "none" as const,
       };
 
-      const updated: Project = {
-        ...project,
+      const withFeedback = (base: Project): Project => ({
+        ...base,
         clientReview: {
-          ...project.clientReview,
-          feedback: [...project.clientReview.feedback, entry],
+          ...base.clientReview,
+          feedback: [...base.clientReview.feedback, entry],
         },
         timeline: [
-          ...project.timeline,
+          ...base.timeline,
           {
             id: newId("evt"),
             at: entry.submittedAt,
@@ -102,9 +102,11 @@ export function PresentationView({ projectId }: { projectId: string }) {
             detail: entry.body.slice(0, 160),
           },
         ],
-      };
+      });
 
-      await projectRepository.save(updated);
+      // Applied to the latest saved copy, so feedback never overwrites the
+      // design team's work if they saved while this page was open.
+      const updated = await updateProject(project.id, withFeedback);
       setProject(updated);
       setDraft("");
       setSent(
