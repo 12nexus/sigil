@@ -3,6 +3,7 @@ import { getAsset } from "@/services/db/assetStore";
 import type { LogoConcept, Project } from "@/types";
 import { downloadBlob, downloadJson, downloadText } from "@/utils/download";
 import { slugify } from "@/utils/format";
+import { toLogoPng } from "@/utils/image";
 import { serializeBrief } from "@/prompts/shared";
 
 /**
@@ -11,10 +12,21 @@ import { serializeBrief } from "@/prompts/shared";
  * Asset bundles carry a README that states plainly what the files are — AI
  * raster, not production vector — so the distinction survives the handoff even
  * when the ZIP is forwarded on without context.
+ *
+ * Every image is exported as a transparent PNG cropped edge to edge to the
+ * artwork. The favicon keeps its tile: only background outside it is removed.
  */
 
 const extensionFor = (mimeType: string): string =>
   mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : "jpg";
+
+async function logoFile(blob: Blob, kind: string): Promise<{ blob: Blob; ext: string } | null> {
+  try {
+    return { blob: await toLogoPng(blob, { keepEnclosed: kind === "favicon" }), ext: "png" };
+  } catch {
+    return null;
+  }
+}
 
 async function addConceptAssets(
   zip: JSZip,
@@ -26,8 +38,13 @@ async function addConceptAssets(
   for (const asset of concept.assets) {
     const stored = await getAsset(asset.assetId);
     if (!stored) continue;
-    const name = `${slugify(project.companyName)}-${concept.code}-${asset.kind}.${extensionFor(stored.mimeType)}`;
-    zip.folder(folder)!.file(name, stored.blob);
+    // If an image cannot be processed, ship the original rather than drop it.
+    const file = (await logoFile(stored.blob, asset.kind)) ?? {
+      blob: stored.blob,
+      ext: extensionFor(stored.mimeType),
+    };
+    const name = `${slugify(project.companyName)}-${concept.code}-${asset.kind}.${file.ext}`;
+    zip.folder(folder)!.file(name, file.blob);
     count += 1;
   }
   return count;
@@ -36,7 +53,9 @@ async function addConceptAssets(
 const DISCLOSURE = `ASSET DISCLOSURE
 ================
 
-Every image file in this package is an AI-generated raster image (PNG or JPEG).
+Every image file in this package is an AI-generated raster image, exported as
+a transparent PNG cropped to the artwork. The background was removed
+automatically: check edges before use. The favicon keeps its own tile.
 
 What that means in practice:
 - These files are suitable for review, client presentation, digital comping,

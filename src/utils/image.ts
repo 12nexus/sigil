@@ -6,6 +6,8 @@
  * comparison mode matches what the asset actually does.
  */
 
+import { cutout, type CutoutOptions } from "./cutout";
+
 async function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -78,10 +80,28 @@ export async function toSmallUrl(src: string, size = 32): Promise<string> {
   return canvasFrom(img, size).toDataURL("image/png");
 }
 
-export async function toPngBlob(src: string, size?: number): Promise<Blob> {
-  const img = await loadImage(src);
-  const canvas = canvasFrom(img, size);
-  return new Promise((resolve) =>
-    canvas.toBlob((b) => resolve(b ?? new Blob()), "image/png"),
-  );
+/**
+ * A delivery-ready logo file: transparent PNG, cropped edge to edge to the
+ * artwork. See `cutout()` for how the background is removed.
+ */
+export async function toLogoPng(blob: Blob, options?: CutoutOptions): Promise<Blob> {
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await loadImage(url);
+    const source = canvasFrom(img);
+    const pixels = source
+      .getContext("2d", { willReadFrequently: true })!
+      .getImageData(0, 0, source.width, source.height);
+    const out = cutout(pixels, options);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = out.width;
+    canvas.height = out.height;
+    canvas.getContext("2d")!.putImageData(new ImageData(out.data, out.width, out.height), 0, 0);
+    return await new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not encode PNG"))), "image/png"),
+    );
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }

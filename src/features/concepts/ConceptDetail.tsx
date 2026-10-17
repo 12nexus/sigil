@@ -39,7 +39,7 @@ import {
 import { timelineEvent } from "@/workflows/projectFactory";
 import { formatRelative } from "@/utils/format";
 import { downloadBlob } from "@/utils/download";
-import { toPngBlob } from "@/utils/image";
+import { toLogoPng } from "@/utils/image";
 import { cn } from "@/utils/cn";
 
 type Tab = "overview" | "mockups" | "critique" | "typography" | "lineage" | "technical";
@@ -169,7 +169,7 @@ export function ConceptDetail({
 
   const download = async () => {
     if (!url) return;
-    const blob = await toPngBlob(url);
+    const blob = await toLogoPng(await (await fetch(url)).blob());
     downloadBlob(blob, `${project.companyName}-${concept.code}.png`);
   };
 
