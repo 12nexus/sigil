@@ -21,6 +21,7 @@ import { CompareModal } from "@/features/concepts/CompareModal";
 import { ConceptDetail } from "@/features/concepts/ConceptDetail";
 import { BatchProgress } from "@/features/exploration/BatchProgress";
 import { StageHeader } from "@/features/workspace/StageHeader";
+import { MockupBoards } from "@/features/mockups/MockupBoards";
 import { useBatchJob } from "@/hooks/useBatchJob";
 import { useLoadedProject } from "@/hooks/useProject";
 import { useToast } from "@/hooks/useToast";
@@ -247,6 +248,15 @@ export function FinalistsStage() {
               }
             />
           ))}
+        </div>
+
+        <div>
+          <h2 className="mb-3 text-[15px] text-ink">Mockup boards</h2>
+          <MockupBoards
+            concepts={finalists}
+            batch={batch}
+            emptyHint="Promote finalists to see each one on real surfaces."
+          />
         </div>
 
         <Panel className="flex flex-wrap items-center justify-between gap-4 border-accent/20">

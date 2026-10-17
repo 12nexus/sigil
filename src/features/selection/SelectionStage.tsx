@@ -10,6 +10,7 @@ import { ConceptLibrary } from "@/features/concepts/ConceptLibrary";
 import { ConceptDetail } from "@/features/concepts/ConceptDetail";
 import { IterateModal } from "@/features/concepts/IterateModal";
 import { VersionTree } from "@/features/concepts/VersionTree";
+import { MockupBoards } from "@/features/mockups/MockupBoards";
 import { StageHeader } from "@/features/workspace/StageHeader";
 import { useBatchJob } from "@/hooks/useBatchJob";
 import { useLoadedProject } from "@/hooks/useProject";
@@ -23,7 +24,7 @@ export function SelectionStage() {
   const { push } = useToast();
   const batch = useBatchJob(project.id);
 
-  const [view, setView] = useState<"grid" | "tree">("grid");
+  const [view, setView] = useState<"grid" | "tree" | "mockups">("grid");
   const [iterateId, setIterateId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -112,6 +113,7 @@ export function SelectionStage() {
                 options={[
                   { value: "grid", label: "Library" },
                   { value: "tree", label: "Version tree" },
+                  { value: "mockups", label: "Mockups" },
                 ]}
               />
             </span>
@@ -120,7 +122,7 @@ export function SelectionStage() {
 
         {view === "grid" ? (
           <ConceptLibrary concepts={project.concepts} onIterate={setIterateId} />
-        ) : (
+        ) : view === "tree" ? (
           <Panel>
             <VersionTree
               concepts={project.concepts}
@@ -128,6 +130,12 @@ export function SelectionStage() {
               onOpen={setDetailId}
             />
           </Panel>
+        ) : (
+          <MockupBoards
+            concepts={[...shortlisted, ...favorites]}
+            batch={batch}
+            emptyHint="Favourite or shortlist concepts in the library and a mockup board for each one appears here."
+          />
         )}
 
         {shortlisted.length > 0 ? (

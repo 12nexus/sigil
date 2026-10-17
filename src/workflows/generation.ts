@@ -1,14 +1,17 @@
 import type { ImagePromptInput } from "@/prompts/logoExploration";
 import { makeConceptCode, makeIterationCode } from "@/prompts/logoExploration";
+import { MOCKUP_ASPECT_RATIO, MOCKUP_SURFACE_BY_ID } from "@/prompts/mockups";
 import { saveAsset } from "@/services/db/assetStore";
 import {
   generateLogoConcepts,
   generateLogoImage,
+  generateMockupImage,
   type ConceptPlan,
 } from "@/services/gemini";
 import { GeminiError } from "@/services/gemini/errors";
 import type {
   ConceptAsset,
+  ConceptMockup,
   CreativeDirection,
   GenerationJob,
   GenerationSettings,
@@ -16,6 +19,7 @@ import type {
   JobItem,
   LockupKind,
   LogoConcept,
+  MockupSurface,
   Project,
 } from "@/types";
 import { newId } from "@/utils/id";
@@ -203,6 +207,40 @@ export function createLockupJob(
 }
 
 /* ================================================================== */
+/* Mockup boards                                                       */
+/* ================================================================== */
+
+/** One job for any number of concepts, one item per concept and surface. */
+export function createMockupJob(
+  project: Project,
+  requests: Array<{ concept: LogoConcept; surfaces: MockupSurface[] }>,
+): GenerationJob {
+  const now = new Date().toISOString();
+  return {
+    id: newId("job"),
+    projectId: project.id,
+    kind: "mockups",
+    title:
+      requests.length === 1
+        ? `Mockups for ${requests[0].concept.code}`
+        : `Mockups for ${requests.length} concepts`,
+    status: "queued",
+    createdAt: now,
+    updatedAt: now,
+    context: { kind: "mockups", conceptIds: requests.map((r) => r.concept.id) },
+    items: requests.flatMap(({ concept, surfaces }) =>
+      surfaces.map<JobItem>((surface) => ({
+        id: newId("item"),
+        label: `${concept.code} · ${MOCKUP_SURFACE_BY_ID[surface].label}`,
+        status: "pending",
+        attempts: 0,
+        payload: { conceptId: concept.id, mockupSurface: surface },
+      })),
+    ),
+  };
+}
+
+/* ================================================================== */
 /* Item execution                                                      */
 /* ================================================================== */
 
@@ -214,6 +252,8 @@ export interface ExecutorContext {
   onConcept: (concept: LogoConcept) => Promise<void>;
   /** Persist a lockup asset onto an existing concept. */
   onLockup: (conceptId: string, asset: ConceptAsset) => Promise<void>;
+  /** Persist a mockup onto an existing concept. */
+  onMockup: (conceptId: string, mockup: ConceptMockup) => Promise<void>;
 }
 
 /**
@@ -227,6 +267,9 @@ export function makeExecutor(ctx: ExecutorContext) {
     const project = ctx.getProject();
     const payload = item.payload;
 
+    if (payload.mockupSurface) {
+      return executeMockup(project, payload, ctx, signal);
+    }
     if (payload.lockupKind) {
       return executeLockup(project, payload, ctx, signal);
     }
@@ -394,6 +437,47 @@ async function executeLockup(
       aspectRatio: ctx.settings.aspectRatio,
       prompt: image.prompt,
       inputs: { lockupKind: kind, conceptId: concept.id },
+      generatedAt: new Date().toISOString(),
+      durationMs: image.durationMs,
+      attempt: 1,
+    },
+  });
+
+  return { conceptId: concept.id };
+}
+
+async function executeMockup(
+  project: Project,
+  payload: Record<string, any>,
+  ctx: ExecutorContext,
+  signal: AbortSignal,
+): Promise<{ conceptId: string }> {
+  const concept = project.concepts.find((c) => c.id === payload.conceptId);
+  if (!concept) throw new Error("The concept no longer exists.");
+
+  const reference = await referenceFor(concept);
+  if (!reference) throw new Error("This concept has no artwork to put on a mockup.");
+
+  const surface = payload.mockupSurface as MockupSurface;
+  const image = await generateMockupImage(
+    surface,
+    reference,
+    concept.typography.exactCompanyName || project.companyName,
+    ctx.settings,
+    { signal, projectId: project.id },
+  );
+  const assetId = image.assetId ?? (await saveAsset(project.id, image.data, image.mimeType));
+
+  await ctx.onMockup(concept.id, {
+    surface,
+    assetId,
+    mimeType: image.mimeType,
+    derivedFrom: concept.primaryAssetId,
+    meta: {
+      model: image.model,
+      aspectRatio: MOCKUP_ASPECT_RATIO,
+      prompt: image.prompt,
+      inputs: { mockupSurface: surface, conceptId: concept.id },
       generatedAt: new Date().toISOString(),
       durationMs: image.durationMs,
       attempt: 1,

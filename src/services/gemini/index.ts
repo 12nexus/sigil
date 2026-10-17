@@ -32,6 +32,7 @@ import {
   type ImagePromptInput,
   LOGO_EXPLORATION_SYSTEM,
 } from "@/prompts/logoExploration";
+import { buildMockupPrompt, MOCKUP_ASPECT_RATIO } from "@/prompts/mockups";
 import {
   buildIterationInstructionPrompt,
   REFINEMENT_SYSTEM,
@@ -50,6 +51,7 @@ import type {
   IterationInstruction,
   LockupKind,
   LogoConcept,
+  MockupSurface,
   Project,
   QualityCheck,
 } from "@/types";
@@ -322,6 +324,43 @@ export async function generateLogoImage(
       prompt,
       aspectRatio: settings.aspectRatio,
       referenceImages: options?.referenceImages,
+      projectId: options?.projectId,
+    },
+    options?.signal,
+  );
+
+  return {
+    assetId: result.assetId,
+    mimeType: result.mimeType,
+    data: result.data,
+    model: result.model || model,
+    prompt,
+    durationMs: Date.now() - started,
+  };
+}
+
+/**
+ * Photograph an existing logo on a real surface. The logo travels as the
+ * reference image; mockups are judged on fidelity, so they use the
+ * higher-fidelity image model.
+ */
+export async function generateMockupImage(
+  surface: MockupSurface,
+  logo: { mimeType: string; data: string },
+  exactCompanyName: string,
+  settings: GenerationSettings,
+  options?: { signal?: AbortSignal; projectId?: string },
+): Promise<LogoImageResult> {
+  const prompt = buildMockupPrompt(surface, exactCompanyName);
+  const model = settings.finalistImageModel;
+  const started = Date.now();
+
+  const result = await requestImage(
+    {
+      model,
+      prompt,
+      aspectRatio: MOCKUP_ASPECT_RATIO,
+      referenceImages: [logo],
       projectId: options?.projectId,
     },
     options?.signal,

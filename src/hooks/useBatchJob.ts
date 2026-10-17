@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { projectRepository } from "@/services/db/repository";
-import type { ConceptAsset, GenerationJob, LogoConcept, Project } from "@/types";
+import type { ConceptAsset, ConceptMockup, GenerationJob, LogoConcept, Project } from "@/types";
 import { BatchRunner, jobProgress, type JobProgress } from "@/workflows/batchRunner";
 import { makeExecutor } from "@/workflows/generation";
 import { resolveGenerationSettings, useSettings } from "./useSettings";
@@ -73,6 +73,28 @@ export function useBatchJob(projectId: string) {
                       ...c,
                       // Replacing by kind keeps regenerated lockups from stacking up.
                       assets: [...c.assets.filter((a) => a.kind !== asset.kind), asset],
+                      updatedAt: new Date().toISOString(),
+                    }
+                  : c,
+              ),
+            }),
+            null,
+          );
+          if (next) projectRef.current = next;
+        },
+        onMockup: async (conceptId: string, mockup: ConceptMockup) => {
+          const next = await update(
+            (p) => ({
+              ...p,
+              concepts: p.concepts.map((c) =>
+                c.id === conceptId
+                  ? {
+                      ...c,
+                      // One mockup per surface: regenerating replaces it.
+                      mockups: [
+                        ...(c.mockups ?? []).filter((m) => m.surface !== mockup.surface),
+                        mockup,
+                      ],
                       updatedAt: new Date().toISOString(),
                     }
                   : c,

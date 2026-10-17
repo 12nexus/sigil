@@ -16,7 +16,9 @@ import { ConceptImage, type RenderMode } from "@/components/ConceptImage";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Field";
 import { Badge, Modal, Tabs } from "@/components/ui/Primitives";
+import { MockupBoard } from "@/features/mockups/MockupBoard";
 import { useAssetUrl } from "@/hooks/useAssetUrl";
+import { useBatchJob } from "@/hooks/useBatchJob";
 import { useLoadedProject } from "@/hooks/useProject";
 import { resolveGenerationSettings, useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/useToast";
@@ -40,7 +42,7 @@ import { downloadBlob } from "@/utils/download";
 import { toPngBlob } from "@/utils/image";
 import { cn } from "@/utils/cn";
 
-type Tab = "overview" | "critique" | "typography" | "lineage" | "technical";
+type Tab = "overview" | "mockups" | "critique" | "typography" | "lineage" | "technical";
 
 export function ConceptDetail({
   conceptId,
@@ -56,6 +58,7 @@ export function ConceptDetail({
   const { project, update } = useLoadedProject();
   const { settings } = useSettings();
   const { push } = useToast();
+  const batch = useBatchJob(project.id);
 
   const [tab, setTab] = useState<Tab>("overview");
   const [mode, setMode] = useState<RenderMode>("normal");
@@ -311,6 +314,7 @@ export function ConceptDetail({
             onChange={setTab}
             options={[
               { value: "overview", label: "Overview" },
+              { value: "mockups", label: "Mockups", count: concept.mockups?.length ?? 0 },
               { value: "critique", label: "AI critique" },
               { value: "typography", label: "Typography" },
               { value: "lineage", label: "Lineage", count: children.length },
@@ -338,6 +342,8 @@ export function ConceptDetail({
               </div>
             </div>
           ) : null}
+
+          {tab === "mockups" ? <MockupBoard concept={concept} batch={batch} compact /> : null}
 
           {tab === "critique" ? (
             <CritiqueTab

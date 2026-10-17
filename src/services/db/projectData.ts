@@ -39,6 +39,7 @@ export function referencedAssetIds(project: Project): string[] {
   for (const c of project.concepts) {
     if (c.primaryAssetId) ids.add(c.primaryAssetId);
     for (const a of c.assets) ids.add(a.assetId);
+    for (const m of c.mockups ?? []) ids.add(m.assetId);
     if (c.typography.reconstructedWordmarkAssetId) {
       ids.add(c.typography.reconstructedWordmarkAssetId);
     }
@@ -79,6 +80,11 @@ export function buildDuplicate(
     ...c,
     primaryAssetId: remap(c.primaryAssetId),
     assets: c.assets.map((a) => ({ ...a, assetId: remap(a.assetId)! })),
+    mockups: c.mockups?.map((m) => ({
+      ...m,
+      assetId: remap(m.assetId)!,
+      derivedFrom: remap(m.derivedFrom),
+    })),
     typography: {
       ...c.typography,
       reconstructedWordmarkAssetId: remap(c.typography.reconstructedWordmarkAssetId),

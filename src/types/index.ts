@@ -237,6 +237,26 @@ export interface ConceptAsset {
   derivedFrom?: string;
 }
 
+/** A real-world surface a logo is photographed on, for judging it in context. */
+export type MockupSurface =
+  | "emboss"
+  | "print"
+  | "business_cards"
+  | "mug"
+  | "office_wall"
+  | "building"
+  | "glass_wall"
+  | "stationery";
+
+export interface ConceptMockup {
+  surface: MockupSurface;
+  assetId: string;
+  mimeType: string;
+  meta: GenerationMeta;
+  /** The logo asset the mockup was made from — stale once the logo changes. */
+  derivedFrom?: string;
+}
+
 export interface ConceptCritique {
   distinctiveness: CritiqueScore;
   memorability: CritiqueScore;
@@ -315,6 +335,8 @@ export interface LogoConcept {
   comments: Comment[];
   critique?: ConceptCritique;
   qualityCheck?: QualityCheck;
+  /** The logo shown on real surfaces. Optional: older projects have none. */
+  mockups?: ConceptMockup[];
 
   /** Designer-authored notes, never shown to the client. */
   notes: string;
@@ -552,7 +574,7 @@ export type JobStatus =
 export interface GenerationJob {
   id: string;
   projectId: string;
-  kind: "exploration" | "iteration" | "finalist_lockups" | "delivery_assets";
+  kind: "exploration" | "iteration" | "finalist_lockups" | "delivery_assets" | "mockups";
   title: string;
   status: JobStatus;
   items: JobItem[];

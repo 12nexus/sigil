@@ -11,6 +11,7 @@ import { ConceptDetail } from "@/features/concepts/ConceptDetail";
 import { ConceptLibrary } from "@/features/concepts/ConceptLibrary";
 import { IterateModal } from "@/features/concepts/IterateModal";
 import { VersionTree } from "@/features/concepts/VersionTree";
+import { MockupBoards } from "@/features/mockups/MockupBoards";
 import { BatchProgress } from "@/features/exploration/BatchProgress";
 import { StageHeader } from "@/features/workspace/StageHeader";
 import { useBatchJob } from "@/hooks/useBatchJob";
@@ -26,7 +27,7 @@ export function RefinementStage() {
   const { push } = useToast();
   const batch = useBatchJob(project.id);
 
-  const [view, setView] = useState<"shortlist" | "all" | "tree">("shortlist");
+  const [view, setView] = useState<"shortlist" | "all" | "tree" | "mockups">("shortlist");
   const [iterateId, setIterateId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -151,6 +152,7 @@ export function RefinementStage() {
                   { value: "shortlist", label: "Shortlist" },
                   { value: "all", label: "All concepts" },
                   { value: "tree", label: "Version tree" },
+                  { value: "mockups", label: "Mockups" },
                 ]}
               />
             </span>
@@ -286,6 +288,12 @@ export function RefinementStage() {
           </div>
         ) : view === "all" ? (
           <ConceptLibrary concepts={project.concepts} onIterate={setIterateId} />
+        ) : view === "mockups" ? (
+          <MockupBoards
+            concepts={shortlisted}
+            batch={batch}
+            emptyHint="Shortlist concepts to see each one on real surfaces."
+          />
         ) : (
           <Panel>
             <VersionTree
