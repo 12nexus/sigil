@@ -144,7 +144,12 @@ structured requirements, with genuine ambiguities flagged rather than guessed.
 **You approve the interpretation before anything is generated from it.**
 
 **10 · Finalization & Delivery** — Three separate approvals (yours, the
-client's, final), then the full logo system, a brand kit, and exports.
+client's, final), then the full logo system, a brand kit, and exports: the
+logo package (PNGs plus vector SVG/PDF/EPS traces of the final lockups) and a
+stationery kit built from the logo, palette and typefaces — Word letterhead,
+Excel invoice, print-ready business cards, envelope and compliment slip,
+PowerPoint template, email signatures, social and video-call images, and the
+brand fonts.
 
 ---
 
@@ -268,12 +273,17 @@ sign-in as the rest of the app:
 These are real, and the application states them in the UI rather than hiding
 them.
 
-**1 · Generated assets are raster, not vector.** Gemini's image models return
-PNG/JPEG. SIGIL does not claim otherwise: the brand kit carries an explicit
-asset disclosure, every exported ZIP ships a `README.txt` saying the same, and
-the finalization stage repeats it. Before rollout, the approved mark must be
-redrawn as true vector from these references. Auto-tracing a raster logo produces
-messy paths and false confidence, so SIGIL deliberately does not do it.
+**1 · Generated assets are raster; vectors are traces of them.** Gemini's image
+models return PNG/JPEG. At delivery, each final lockup is traced to vector with
+[VectorCraft](https://github.com/storytold/vectorcraft)'s command-line tool
+(Flat Logo mode, on the CPU, about a second per logo; `src/server/vectorcraft.ts`).
+A trace can simplify what it cannot follow (a gradient becomes flat bands), so
+every trace is rendered and compared with its image on the image's interior
+pixels (edges, which every trace redraws slightly, are left out); one that lost
+or added shapes, or flattened the colours, is left out and named in the package
+README rather than shipped. Print files in the stationery kit use the vector logo where there
+is one. A trace still copies the image exactly, malformed letters included, so
+the lettering needs a human check before large print runs.
 
 **2 · Text inside generated images is not trustworthy.** Image models corrupt
 letterforms. Every concept therefore carries a separate typography record: the
@@ -340,8 +350,6 @@ for exploration, and `gemini-3-pro-image` for lockups and delivery assets.
 - Public, token-based client links (the share token already exists) so clients
   can review without the operator login.
 - Per-user accounts and quotas in place of the single operator login.
-- Vector handoff: export the approved mark into an SVG scaffold with correct
-  clear-space and a properly set wordmark for a designer to finish.
 - Wordmark reconstruction in-app, compositing the verified symbol with live
   webfont text so the delivered wordmark is genuinely correct.
 - Mockup generation as an explicit, opt-in stage, separate from concept work.

@@ -518,6 +518,34 @@ export interface BrandKit {
   generatedAt: string;
 }
 
+/** One person who gets business cards and an email signature. */
+export interface StationeryPerson {
+  id: string;
+  name: string;
+  title: string;
+  phone: string;
+  email: string;
+}
+
+/** The contact details the stationery kit is set with. */
+export interface StationeryDetails {
+  paper: "a4" | "letter";
+  tagline: string;
+  /** Postal address, one line per row. */
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  /** Bank or payment instructions printed on the invoice. */
+  paymentDetails: string;
+  /**
+   * Public URL of the logo for email signatures. Empty: the logo is embedded
+   * in the signature, which Gmail does not accept.
+   */
+  signatureLogoUrl: string;
+  people: StationeryPerson[];
+}
+
 /* ------------------------------------------------------------------ */
 /* Timeline                                                            */
 /* ------------------------------------------------------------------ */
@@ -630,6 +658,8 @@ export interface Project {
 
   finalization?: FinalizationPlan;
   brandKit?: BrandKit;
+  /** Contact details for the stationery kit. Optional: older projects have none. */
+  stationery?: StationeryDetails;
 
   timeline: TimelineEvent[];
 

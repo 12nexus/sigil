@@ -5,13 +5,16 @@ import { downloadBlob, downloadJson, downloadText } from "@/utils/download";
 import { slugify } from "@/utils/format";
 import { toLogoPng } from "@/utils/image";
 import { serializeBrief } from "@/prompts/shared";
+import { addStationery } from "./stationery";
+import { addVectorLogos } from "./vectors";
 
 /**
  * Exports.
  *
  * Asset bundles carry a README that states plainly what the files are — AI
- * raster, not production vector — so the distinction survives the handoff even
- * when the ZIP is forwarded on without context.
+ * raster images, plus vector traces of the final lockups where they trace
+ * cleanly — so the distinction survives the handoff even when the ZIP is
+ * forwarded on without context.
  *
  * Every image is exported as a transparent PNG cropped edge to edge to the
  * artwork. The favicon keeps its tile: only background outside it is removed.
@@ -53,27 +56,29 @@ async function addConceptAssets(
 const DISCLOSURE = `ASSET DISCLOSURE
 ================
 
-Every image file in this package is an AI-generated raster image, exported as
-a transparent PNG cropped to the artwork. The background was removed
+The image files in this package are AI-generated raster images, exported as
+transparent PNGs cropped to the artwork. The background was removed
 automatically: check edges before use. The favicon keeps its own tile.
 
-What that means in practice:
-- These files are suitable for review, client presentation, digital comping,
-  and internal circulation.
-- They are NOT production-ready vector artwork. They do not scale losslessly,
-  they cannot be colour-separated for print, and their edges are resampled
-  rather than mathematically defined.
-- Before this identity is rolled out, the approved mark must be redrawn as true
-  vector artwork by a designer, using these files as reference.
-- Any text rendered inside these images should be treated as indicative only.
-  Image models routinely corrupt letterforms. The wordmark must be reset in the
-  recommended typeface before use.
+final-logo/vector/ holds the final lockups traced into true vector artwork
+(SVG, PDF and EPS, in colour, white and black). Each trace was checked against
+its image; lockups that did not trace cleanly are listed in that folder's
+README and have no vector files. Use the vector files for print, signage and
+anything large.
+
+What to keep in mind:
+- A trace reproduces the image exactly, including any malformed letters in
+  the wordmark. Check the lettering before a large print run; a designer may
+  need to reset the wordmark in the recommended typeface.
+- Lockups without a vector file (and the concepts in finalists/) are raster
+  only: fine for screens and review, not for large print.
 
 The colour values, typography recommendations, clear space rules, minimum sizes
 and usage guidelines in the accompanying brand kit ARE production-ready as
 written.
 `;
 
+/** The approved logo files, finalists, brief, brand kit and stationery kit. */
 export async function exportFinalAssets(project: Project): Promise<void> {
   const zip = new JSZip();
   const approvedId = project.approvals.final.conceptId ?? project.approvals.client.conceptId;
@@ -81,6 +86,14 @@ export async function exportFinalAssets(project: Project): Promise<void> {
 
   if (approved) {
     await addConceptAssets(zip, project, approved, "final-logo");
+    try {
+      await addVectorLogos(zip, project, approved, "final-logo/vector");
+    } catch (err) {
+      zip.file(
+        "final-logo/vector/README.txt",
+        `The vector logos could not be made: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+    }
   }
 
   for (const id of project.finalistIds) {
@@ -96,10 +109,28 @@ export async function exportFinalAssets(project: Project): Promise<void> {
   }
   if (project.brandKit) {
     zip.file("brand-kit.md", brandKitMarkdown(project));
+    // The logo files above are the package's core: a stationery failure must not cost them.
+    try {
+      await addStationery(zip, project);
+    } catch (err) {
+      zip.file(
+        "stationery/NOT-INCLUDED.txt",
+        `The stationery kit could not be built: ${err instanceof Error ? err.message : String(err)}\n` +
+          "Try Delivery → Stationery kit → Download stationery.\n",
+      );
+    }
   }
 
   const blob = await zip.generateAsync({ type: "blob" });
   downloadBlob(blob, `${slugify(project.companyName)}-logo-package.zip`);
+}
+
+/** The stationery kit on its own. */
+export async function exportStationery(project: Project): Promise<void> {
+  const zip = new JSZip();
+  await addStationery(zip, project, `${slugify(project.companyName)}-stationery`);
+  const blob = await zip.generateAsync({ type: "blob" });
+  downloadBlob(blob, `${slugify(project.companyName)}-stationery.zip`);
 }
 
 export async function exportAllConcepts(project: Project): Promise<void> {

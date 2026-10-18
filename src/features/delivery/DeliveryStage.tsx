@@ -27,7 +27,7 @@ import { resolveGenerationSettings, useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/useToast";
 import { generateBrandKit } from "@/services/gemini";
 import { GeminiError } from "@/services/gemini/errors";
-import type { GeminiErrorCode } from "@/types";
+import type { GeminiErrorCode, StationeryDetails } from "@/types";
 import { timelineEvent } from "@/workflows/projectFactory";
 import {
   exportAllConcepts,
@@ -35,7 +35,9 @@ import {
   exportFinalAssets,
   exportHistory,
   exportProjectData,
+  exportStationery,
 } from "./exports";
+import { StationeryPanel } from "./StationeryPanel";
 
 export function DeliveryStage() {
   const router = useRouter();
@@ -202,7 +204,7 @@ export function DeliveryStage() {
             <AiNote
               tone="accent"
               did="The brand kit is written and ready to hand over."
-              why="Colour values, typography, spacing and usage rules in it are production-ready. The logo image files are not — that distinction is stated in the kit and in the ZIP's README."
+              why="Colour values, typography, spacing and usage rules in it are production-ready. The logo package adds vector versions (SVG, PDF, EPS) of each final lockup that traces cleanly; the ZIP's README says which, and that the lettering needs a check."
               next="Open the kit to read or print it, and download the logo package for the client."
             />
 
@@ -272,6 +274,19 @@ export function DeliveryStage() {
           </>
         )}
 
+        {kit ? (
+          <StationeryPanel
+            project={project}
+            save={async (stationery: StationeryDetails) => {
+              await update((p) => ({ ...p, stationery }), null);
+            }}
+            downloading={exporting === "stationery"}
+            onDownload={(stationery) =>
+              runExport("stationery", () => exportStationery({ ...project, stationery }))
+            }
+          />
+        ) : null}
+
         {/* Exports */}
         <Panel>
           <h3 className="mb-1 text-[14px] text-ink">Exports</h3>
@@ -284,7 +299,7 @@ export function DeliveryStage() {
             <ExportRow
               icon={<Package size={15} />}
               title="Final logo package"
-              description="Every asset in the approved system, plus the brief, brand kit, and disclosure."
+              description="Every asset in the approved system with vector versions, plus the brief, brand kit, stationery kit, and disclosure."
               loading={exporting === "final"}
               onClick={() => runExport("final", () => exportFinalAssets(project))}
             />
