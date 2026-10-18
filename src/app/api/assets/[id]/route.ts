@@ -17,6 +17,10 @@ export function GET(_req: NextRequest, { params }: { params: Promise<{ id: strin
         "Content-Length": String(asset.data.length),
         // Asset ids are never reused, so the bytes behind one never change.
         "Cache-Control": "private, max-age=31536000, immutable",
+        // An uploaded SVG can carry script; opened directly it must not run on
+        // this origin. <img> embedding is unaffected.
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        "X-Content-Type-Options": "nosniff",
       },
     });
   });
