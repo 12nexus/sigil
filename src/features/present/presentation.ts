@@ -28,10 +28,9 @@ export interface Presentation {
 }
 
 export function presentationOf(project: Project): Presentation {
-  const order = project.clientReview.conceptOrder.length
-    ? project.clientReview.conceptOrder
-    : project.finalistIds;
-  const concepts = order
+  // The current finalists, in their current order: finalists added or reordered after the
+  // presentation was first approved are included. Each can still be hidden from the client.
+  const concepts = project.finalistIds
     .map((id) => project.concepts.find((c) => c.id === id))
     .filter((c): c is LogoConcept => c !== undefined && c.clientVisible)
     .map((c) => ({

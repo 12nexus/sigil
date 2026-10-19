@@ -109,10 +109,6 @@ export function FinalistsStage() {
           },
         },
         stage: "client-review",
-        clientReview: {
-          ...p.clientReview,
-          conceptOrder: p.finalistIds,
-        },
         concepts: p.concepts.map((c) =>
           p.finalistIds.includes(c.id) ? { ...c, clientVisible: true } : c,
         ),

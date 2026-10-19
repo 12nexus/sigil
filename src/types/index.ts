@@ -451,7 +451,10 @@ export interface ClientReviewSession {
   publishedAt?: string;
   presentationTitle: string;
   presentationIntro: string;
-  /** Concept ids, in presentation order. */
+  /**
+   * Legacy: a snapshot of the finalists taken at approval. No longer read; the
+   * presentation follows `Project.finalistIds`, so later finalists are included.
+   */
   conceptOrder: string[];
   feedback: ClientFeedbackEntry[];
   round: number;

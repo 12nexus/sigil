@@ -31,6 +31,7 @@ import { timelineEvent } from "@/workflows/projectFactory";
 import { formatRelative } from "@/utils/format";
 import { newShareToken } from "@/utils/id";
 import { currentMockups } from "@/features/mockups/current";
+import { presentationOf } from "@/features/present/presentation";
 import { EditableList } from "@/features/brief/EditableValue";
 
 export function ClientReviewStage() {
@@ -53,7 +54,8 @@ export function ClientReviewStage() {
     [project.finalistIds, project.concepts],
   );
 
-  const visibleCount = finalists.filter((c) => c.clientVisible).length;
+  // Counted by the same projection the client page renders from, so the two always agree.
+  const visibleCount = presentationOf(project).concepts.length;
   const feedback = project.clientReview.feedback;
   const pending = feedback.filter((f) => f.interpretationStatus === "pending_review");
 

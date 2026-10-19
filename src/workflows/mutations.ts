@@ -182,8 +182,10 @@ export function setConceptStatus(
 ): Project {
   let next = updateConcept(project, conceptId, { status });
 
-  // Finalist membership is kept as an explicit ordered list.
+  // Finalist membership is kept as an explicit ordered list. A new finalist is shown to the
+  // client unless the designer hides it in Client Review.
   if (status === "finalist" && !next.finalistIds.includes(conceptId)) {
+    next = updateConcept(next, conceptId, { clientVisible: true });
     next = { ...next, finalistIds: [...next.finalistIds, conceptId] };
   }
   if (status !== "finalist" && status !== "approved") {
