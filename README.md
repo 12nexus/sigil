@@ -291,10 +291,12 @@ authoritative company name you typed, a verified/unverified flag, and real
 typeface recommendations for rebuilding the wordmark properly. The finalists
 stage warns you if you are about to present an unverified wordmark.
 
-**3 · The client link needs the SIGIL login.** Projects are stored on the
-server, so `/present/[id]` opens from any machine, but every page sits behind
-the single operator sign-in. To show a client without sharing the login,
-present over a screen share or export the presentation as PDF.
+**3 · The client link is public to anyone who has it.** `/share/<token>` needs
+no sign-in: it shows only the concepts marked for the client, their lockups and
+current mockups, and accepts feedback (served from a client-safe projection,
+`src/server/share.ts`; images outside the presentation are refused). The token
+is 128 random bits; unpublishing turns the link off and "New link" replaces it.
+`/present/<id>` is the signed-in preview of the same page.
 
 **4 · PDF export goes through the browser.** The presentation and brand kit are
 laid out as real print documents and printed via the browser's own PDF engine.
@@ -347,8 +349,6 @@ for exploration, and `gemini-3-pro-image` for lockups and delivery assets.
 
 ## Optional next steps
 
-- Public, token-based client links (the share token already exists) so clients
-  can review without the operator login.
 - Per-user accounts and quotas in place of the single operator login.
 - Wordmark reconstruction in-app, compositing the verified symbol with live
   webfont text so the delivered wordmark is genuinely correct.

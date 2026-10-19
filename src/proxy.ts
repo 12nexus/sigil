@@ -3,9 +3,9 @@ import { SESSION_COOKIE, verifySessionToken } from "@/services/auth/session";
 
 /**
  * Authentication gate. Every page and API route requires a valid session
- * cookie, except the login page, the login/logout endpoints, and the
- * container healthcheck (GET /api/gemini/status, which only reports whether
- * a server key exists).
+ * cookie, except the login page, the login/logout endpoints, the container
+ * healthcheck (GET /api/gemini/status, which only reports whether a server key
+ * exists), and client share links (/share/<token>, see src/server/share.ts).
  *
  * Fails closed: if SIGIL_AUTH_USERNAME / SIGIL_AUTH_PASSWORD are unset, no
  * session can ever verify, so nothing past the login page is reachable.
@@ -37,6 +37,8 @@ function isPublic(req: NextRequest): boolean {
   if (pathname === "/login") return true;
   if (pathname === "/api/auth/login" || pathname === "/api/auth/logout") return true;
   if (pathname === "/api/gemini/status" && req.method === "GET") return true;
+  // Client share links: the page and its routes, which serve only the published presentation.
+  if (pathname.startsWith("/share/") || pathname.startsWith("/api/share/")) return true;
   return false;
 }
 

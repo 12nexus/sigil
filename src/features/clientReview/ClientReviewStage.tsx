@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Sparkles,
   Upload,
+  RotateCcw,
 } from "lucide-react";
 import { AiNote } from "@/components/AiNote";
 import { ConceptImage } from "@/components/ConceptImage";
@@ -28,6 +29,8 @@ import type { ClientFeedbackEntry, FeedbackInterpretation, LogoConcept } from "@
 import { addConstraints, makeConstraint, toggleClientVisible } from "@/workflows/mutations";
 import { timelineEvent } from "@/workflows/projectFactory";
 import { formatRelative } from "@/utils/format";
+import { newShareToken } from "@/utils/id";
+import { currentMockups } from "@/features/mockups/current";
 import { EditableList } from "@/features/brief/EditableValue";
 
 export function ClientReviewStage() {
@@ -54,10 +57,18 @@ export function ClientReviewStage() {
   const feedback = project.clientReview.feedback;
   const pending = feedback.filter((f) => f.interpretationStatus === "pending_review");
 
-  const shareUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/present/${project.id}`
-      : `/present/${project.id}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  // The client's link needs no sign-in; the preview is the signed-in view of the same page.
+  const shareUrl = `${origin}/share/${project.clientReview.shareToken}`;
+  const previewUrl = `${origin}/present/${project.id}`;
+
+  const newLink = async () => {
+    if (!window.confirm("Make a new client link? The current link stops working straight away.")) return;
+    await update(
+      (p) => ({ ...p, clientReview: { ...p.clientReview, shareToken: newShareToken() } }),
+      timelineEvent("system", "New client link issued", "The previous link no longer works.", "client-review"),
+    );
+  };
 
   /* ----------------------------- publishing ---------------------------- */
 
@@ -263,7 +274,7 @@ export function ClientReviewStage() {
         stage="client-review"
         action={
           <div className="flex flex-wrap gap-2">
-            <a href={shareUrl} target="_blank" rel="noreferrer">
+            <a href={previewUrl} target="_blank" rel="noreferrer">
               <Button variant="secondary" size="sm" icon={<ExternalLink size={13} />}>
                 Preview
               </Button>
@@ -319,10 +330,19 @@ export function ClientReviewStage() {
                   </IconButton>
                 </div>
                 <p className="mt-2 text-[11px] leading-relaxed text-faint">
-                  Projects are stored on SIGIL&apos;s server, so this link opens the live
-                  presentation on any machine. Every page sits behind SIGIL&apos;s sign-in,
-                  so a client without the login needs a screen share or the PDF export.
+                  Anyone with this link can view the presentation and send feedback, without
+                  signing in. It shows only the concepts marked for the client, their lockups and
+                  mockups. Unpublishing turns it off; a new link replaces it for good.
                 </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={<RotateCcw size={12} />}
+                  className="mt-2 -ml-2"
+                  onClick={newLink}
+                >
+                  New link
+                </Button>
               </div>
             </div>
           </Panel>
@@ -373,7 +393,14 @@ export function ClientReviewStage() {
                     imgClassName="p-2"
                   />
                   <span className="mt-2 flex items-center justify-between gap-1 px-0.5">
-                    <span className="truncate text-[11px] text-muted">{concept.name}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[11px] text-muted">{concept.name}</span>
+                      <span className="block text-left text-[10px] text-faint">
+                        {currentMockups(concept).length
+                          ? `${currentMockups(concept).length} mockups`
+                          : "No mockups yet"}
+                      </span>
+                    </span>
                     {concept.clientVisible ? (
                       <Eye size={11} className="shrink-0 text-accent" />
                     ) : (
@@ -385,7 +412,8 @@ export function ClientReviewStage() {
             </div>
             <p className="mt-3 text-[11px] leading-relaxed text-faint">
               Concept codes, ratings, AI critiques, prompts, rejected work, and your private
-              notes are never included in the presentation.
+              notes are never included in the presentation. Mockups made from the current
+              artwork are shown with each concept; generate them in Finalists.
             </p>
           </div>
         </Panel>

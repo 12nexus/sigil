@@ -14,6 +14,7 @@ import type { ConceptMockup, GenerationJob, JobItem, LogoConcept, MockupSurface 
 import { createMockupJob } from "@/workflows/generation";
 import { downloadBlob } from "@/utils/download";
 import { cn } from "@/utils/cn";
+import { isStale } from "./current";
 
 type Batch = ReturnType<typeof useBatchJob>;
 
@@ -23,10 +24,6 @@ export function missingSurfaces(concept: LogoConcept): MockupSurface[] {
     const mockup = concept.mockups?.find((m) => m.surface === s.id);
     return !mockup || isStale(concept, mockup);
   }).map((s) => s.id);
-}
-
-function isStale(concept: LogoConcept, mockup: ConceptMockup): boolean {
-  return Boolean(mockup.derivedFrom && mockup.derivedFrom !== concept.primaryAssetId);
 }
 
 /** The live job item for this concept and surface, if the batch has one. */

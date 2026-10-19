@@ -11,7 +11,7 @@ import {
 } from "react";
 import { DEFAULT_SETTINGS } from "@/services/gemini/config";
 import { checkServerKey } from "@/services/gemini/client";
-import { api, json } from "@/services/db/api";
+import { StorageError, api, json } from "@/services/db/api";
 import type { AppSettings, GenerationSettings, Project } from "@/types";
 
 /**
@@ -77,15 +77,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       const stored = readLocal();
       const { local, shared: legacyShared } = split({ ...DEFAULT_APP_SETTINGS, ...stored });
       let shared: Partial<SharedPart> | null = null;
-      try {
-        ({ settings: shared } = await api<{ settings: Partial<SharedPart> | null }>("/api/settings"));
-        // First run after the move to the server: carry this browser's settings over.
-        if (!shared && Object.keys(stored).some((k) => k !== "apiKeyOverride" && k !== "useServerKey")) {
-          shared = legacyShared;
-          await api("/api/settings", { method: "PUT", body: json({ settings: shared }) });
+      // Client share links are public: no one is signed in, so there are no settings to load.
+      if (!window.location.pathname.startsWith("/share/")) {
+        try {
+          ({ settings: shared } = await api<{ settings: Partial<SharedPart> | null }>("/api/settings"));
+          // First run after the move to the server: carry this browser's settings over.
+          if (!shared && Object.keys(stored).some((k) => k !== "apiKeyOverride" && k !== "useServerKey")) {
+            shared = legacyShared;
+            await api("/api/settings", { method: "PUT", body: json({ settings: shared }) });
+          }
+        } catch (err) {
+          // The login page runs signed out, with the defaults.
+          if (!(err instanceof StorageError && err.status === 401)) {
+            console.error("[sigil] could not load settings", err);
+          }
         }
-      } catch (err) {
-        console.error("[sigil] could not load settings", err);
       }
       if (!active) return;
       writeLocal(local);
